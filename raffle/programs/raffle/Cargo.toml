@@ -20,3 +20,7 @@ overflow-checks = true
 
 [dependencies]
 anchor-lang = "0.24.2"
+anchor-spl = "0.24.2"
+metaplex-token-metadata = "0.0.1"
+solana-program = "1.10.23"
+spl-token = "3.3.0"
