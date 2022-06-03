@@ -18,6 +18,39 @@ Able to test the script functions working in this way.
 
 ## Features
 
+###  How to deploy this program?
+First of all, you have to git clone in your PC.
+In the folder `raffle`, in the terminal 
+1. `yarn`
+2. `anchor build`
+   In the last sentence you can see:  
+```
+ To deploy this program:
+  $ solana program deploy /home/ubuntu/apollo/Alfred-Raffle-program/raffle/target/deploy/raffle.so
+The program address will default to this keypair (override with --program-id):
+  /home/ubuntu/apollo/Alfred-Raffle-program/raffle/target/deploy/raffle-keypair.json
+```  
+3. `solana-keygen pubkey /home/ubuntu/apollo/Alfred-Raffle-program/raffle/target/deploy/raffle-keypair.json`
+4. You can get the pubkey of the program ID : ex."7M...KWJ"
+5. Please add this pubkey to the lib.rs
+  `line 20: declare_id!("7M...KWJ");`
+6. Please add this pubkey to the Achor.toml
+  `line 4: raffle = "7M...KWJ"
+7. Please add this pubkey to the scripts.ts
+  `line 21: const PROGRAM_ID = "7M...KWJ";`
+8. `anchor build` again
+9. `solana program deploy /home/ubuntu/apollo/Alfred-Raffle-program/raffle/target/deploy/raffle.so`
+10. In the script.ts code, `line 54 decomment`
+```js
+    await initProject();
+```  
+11. `yarn ts-node`
+12. If this error comes - `Error: Provider local is not available on browser.`, `export BRWOSER=`
+13. `yarn ts-node`
+
+
+Then you can enjoy this program 🎭
+
 ### - As a Smart Contract Owner
 For the first time use, the Smart Contract Owner should `initialize` the Smart Contract for global account allocation.
 ```js
