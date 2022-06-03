@@ -21,5 +21,6 @@ export interface RafflePool {
     ticketPriceSol: anchor.BN,
     claimed: anchor.BN,
     winnerIndex: anchor.BN,
+    winner: PublicKey,
     entrants: PublicKey[],
 }

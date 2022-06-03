@@ -18,13 +18,15 @@ import { Raffle } from '../target/types/raffle';
 
 const GLOBAL_AUTHORITY_SEED = "global-authority";
 const TREASURY_WALLET = new PublicKey('Am9xhPPVCfDZFDabcGgmQ8GTMdsbqEt1qVXbyhTxybAp');
-const PROGRAM_ID = "FjZStEweLXQ7xkHHmQPchAkQ3zMz46b6JaWnoEdmSVRt";
-// nYDqQVEaQxLYLh8B8oAFXziMT1bcGrAVigZPL1s3dKc
-const RAFFLE_SIZE = 64136;
+const PROGRAM_ID = "7MMzz4qVhETUqWv2JqcDxqGxSc1Ko7GmH63SD8dMBKWJ";
+
+const METAPLEX = new PublicKey('metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s');
+
+const RAFFLE_SIZE = 64168;
 const COLLECTION_SIZE = 12816;
 const DECIMALS = 1000000000;
 
-anchor.setProvider(anchor.AnchorProvider.local(web3.clusterApiUrl('mainnet-beta')));
+anchor.setProvider(anchor.AnchorProvider.local(web3.clusterApiUrl('devnet')));
 const solConnection = anchor.getProvider().connection;
 const payer = anchor.AnchorProvider.local().wallet;
 console.log(payer.publicKey.toBase58());
@@ -49,15 +51,15 @@ const main = async () => {
     );
     console.log('GlobalAuthority: ', globalAuthority.toBase58());
 
-    await initProject();
-    // await createRaffle(payer.publicKey, new PublicKey("56mo5cpfwTE8Cry52PXWLK6VKPsPmwTt4fj8e2FBZVVZ"), 1, 0, 1653283900, 0, 1, 2, 100);
-    // await updateRafflePeriod(payer.publicKey, new PublicKey("HyomvqtLBjHhPty1P6dKzNf5gNow9qbfGkxj69pqBD8Z"), 1649355012);
-    // await buyTicket(payer.publicKey, new PublicKey("56mo5cpfwTE8Cry52PXWLK6VKPsPmwTt4fj8e2FBZVVZ"), 5);
-    // await revealWinner(payer.publicKey, new PublicKey("2KdJXun2jjGS6upfxWbd2Uk4hD3BY1MFd6TXi8CTqajL"));
-    // await claimReward(payer.publicKey, new PublicKey("14njy5aKYoAvz3Ut8ojfYULhEKbBDXcXidZ3xK6jZs7U"));
-    // await withdrawNft(payer.publicKey, new PublicKey("HyomvqtLBjHhPty1P6dKzNf5gNow9qbfGkxj69pqBD8Z"));
+    // await initProject();
+    // await addCollection(payer.publicKey, new PublicKey('GYq1mi8dh18nRAHbtdDuWiVRu4oAuSNzxoy3qStqX4RA'));
+    // await createRaffle(payer.publicKey, new PublicKey("FLuGogNV1UPns65SCz8ZLBnPx1P9EtcjVphvbyg2t6ix"), 1, 1654249100, 100);
+    // await buyTicket(payer.publicKey, new PublicKey("FLuGogNV1UPns65SCz8ZLBnPx1P9EtcjVphvbyg2t6ix"), 5);
+    // await revealWinner(payer.publicKey, new PublicKey("FLuGogNV1UPns65SCz8ZLBnPx1P9EtcjVphvbyg2t6ix"));
+    // await claimReward(payer.publicKey, new PublicKey("FLuGogNV1UPns65SCz8ZLBnPx1P9EtcjVphvbyg2t6ix"));
+    await withdrawNft(payer.publicKey, new PublicKey("FLuGogNV1UPns65SCz8ZLBnPx1P9EtcjVphvbyg2t6ix"));
 
-    // const pool = await getRaffleState(new PublicKey("56mo5cpfwTE8Cry52PXWLK6VKPsPmwTt4fj8e2FBZVVZ"));
+    // const pool = await getRaffleState(new PublicKey("FLuGogNV1UPns65SCz8ZLBnPx1P9EtcjVphvbyg2t6ix"));
     // console.log(pool);
 }
 
@@ -77,6 +79,7 @@ export const initProject = async () => {
         "collection-pool",
         program.programId,
     );
+    console.log(userAddress.toBase58());
 
     let ix = SystemProgram.createAccountWithSeed({
         fromPubkey: userAddress,
@@ -97,7 +100,9 @@ export const initProject = async () => {
             systemProgram: SystemProgram.programId,
             rent: SYSVAR_RENT_PUBKEY,
         },
-        instructions: [ix],
+        instructions: [
+            ix
+        ],
         signers: [],
     });
     await solConnection.confirmTransaction(tx, "confirmed");
@@ -106,6 +111,11 @@ export const initProject = async () => {
     return true;
 }
 
+/**
+ * @dev Add collection to the Program collection list
+ * @param userAddress The caller of this function
+ * @param collectionId The collection verified creator address to add
+ */
 export const addCollection = async (
     userAddress: PublicKey,
     collectionId: PublicKey
@@ -117,7 +127,7 @@ export const addCollection = async (
         "collection-pool",
         program.programId,
     );
-    const tx = await program.rpc.createRaffle(
+    const tx = await program.rpc.addCollection(
         {
             accounts: {
                 admin: userAddress,
@@ -197,10 +207,8 @@ export const createRaffle = async (
         programId: program.programId,
     });
 
-    console.log(payer.publicKey.toBase58());
-    console.log(raffle.toBase58());
-    console.log(ownerNftAccount.toBase58());
-    console.log(ix0.destinationAccounts[0].toBase58());
+    const metadataAddr = await getMetadataAddr(nft_mint);
+
     const tx = await program.rpc.createRaffle(
         bump,
         new anchor.BN(ticketPriceSol * DECIMALS),
@@ -215,7 +223,9 @@ export const createRaffle = async (
                 ownerTempNftAccount: ownerNftAccount,
                 destNftTokenAccount: ix0.destinationAccounts[0],
                 nftMintAddress: nft_mint,
+                mintMetadata: metadataAddr,
                 tokenProgram: TOKEN_PROGRAM_ID,
+                tokenMetadataProgram: METAPLEX
             },
             instructions: [
                 ix,
@@ -246,9 +256,7 @@ export const buyTicket = async (
     );
 
     const raffleKey = await getRaffleKey(nft_mint);
-    console.log(raffleKey)
-    let raffleState = await getRaffleState(nft_mint);
-    console.log(raffleState);
+    let raffleState = await getStateByKey(raffleKey);
 
     const creator = raffleState.creator;
 
@@ -371,25 +379,25 @@ export const withdrawNft = async (
         userAddress,
         [nft_mint]
     );
-    console.log("Creator's NFT Account: ", ix0.destinationAccounts[0]);
+    console.log("Creator's NFT Account: ", ix0.destinationAccounts[0].toBase58());
+    console.log(raffleKey.toBase58());
 
     let tx = await program.rpc.withdrawNft(
-        bump,
-        {
-            accounts: {
-                claimer: userAddress,
-                globalAuthority,
-                raffle: raffleKey,
-                claimerNftTokenAccount: ix0.destinationAccounts[0],
-                srcNftTokenAccount,
-                nftMintAddress: nft_mint,
-                tokenProgram: TOKEN_PROGRAM_ID,
-            },
-            instructions: [
-                ...ix0.instructions
-            ],
-            signers: [],
-        });
+        bump, {
+        accounts: {
+            claimer: userAddress,
+            globalAuthority,
+            raffle: raffleKey,
+            claimerNftTokenAccount: ix0.destinationAccounts[0],
+            srcNftTokenAccount,
+            nftMintAddress: nft_mint,
+            tokenProgram: TOKEN_PROGRAM_ID,
+        },
+        instructions: [
+            ...ix0.instructions
+        ],
+        signers: [],
+    });
     await solConnection.confirmTransaction(tx, "confirmed");
 
     console.log("txHash =", tx);
@@ -416,9 +424,9 @@ export const getRaffleKey = async (
             ]
         }
     );
+
     if (poolAccounts.length !== 0) {
         let len = poolAccounts.length;
-        console.log(len);
         let max = 0;
         let maxId = 0;
         for (let i = 0; i < len; i++) {
@@ -456,7 +464,6 @@ export const getRaffleState = async (
         }
     );
     if (poolAccounts.length !== 0) {
-        console.log(poolAccounts[0].pubkey.toBase58());
         let rentalKey = poolAccounts[0].pubkey;
 
         try {
@@ -574,5 +581,11 @@ export const createAssociatedTokenAccountInstruction = (
         data: Buffer.from([]),
     });
 }
+export const getMetadataAddr = async (mint: PublicKey): Promise<PublicKey> => {
+    return (
+        await PublicKey.findProgramAddress([Buffer.from('metadata'), METAPLEX.toBuffer(), mint.toBuffer()], METAPLEX)
+    )[0];
+};
+
 
 main()

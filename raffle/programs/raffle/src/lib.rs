@@ -1,13 +1,11 @@
 use anchor_lang::{accounts::cpi_account::CpiAccount, prelude::*, AccountSerialize};
 use anchor_spl::{
-    associated_token::AssociatedToken,
-    token::{self, Burn, Token, TokenAccount, Transfer},
+    token::{self, Token, TokenAccount, Transfer},
 };
 use solana_program::program::{invoke, invoke_signed};
 use solana_program::pubkey::Pubkey;
 use metaplex_token_metadata::state::Metadata;
 
-use spl_token::instruction::*;
 
 pub mod account;
 pub mod constants;
@@ -19,7 +17,7 @@ use constants::*;
 use error::*;
 use utils::*;
 
-declare_id!("FjZStEweLXQ7xkHHmQPchAkQ3zMz46b6JaWnoEdmSVRt");
+declare_id!("7MMzz4qVhETUqWv2JqcDxqGxSc1Ko7GmH63SD8dMBKWJ");
 
 #[program]
 pub mod raffle {
@@ -27,9 +25,9 @@ pub mod raffle {
     /**
      * @dev Initialize the project
      */
-    pub fn initialize(ctx: Context<Initialize>, bump: u8) -> Result<()> {
+    pub fn initialize(ctx: Context<Initialize>, _bump: u8) -> Result<()> {
         let global_authority = &mut ctx.accounts.global_authority;
-        let raffle = ctx.accounts.raffle.load_init()?;
+        let _collection = ctx.accounts.collection.load_init()?;
         global_authority.super_admin = ctx.accounts.admin.key();
         Ok(())
     }
@@ -40,8 +38,8 @@ pub mod raffle {
      */
     pub fn add_collection(ctx: Context<AddCollection>) -> Result<()> {
         let mut collection = ctx.accounts.collection.load_mut()?;
-        let collection_id = ctx.accounts.collection_id;
-        collection.append(collection_id.key());
+        collection.append(ctx.accounts.collection_id.key());
+        Ok(())
     }
 
     /**
@@ -56,7 +54,7 @@ pub mod raffle {
      */
     pub fn create_raffle(
         ctx: Context<CreateRaffle>,
-        global_bump: u8,
+        _global_bump: u8,
         ticket_price_sol: u64,
         end_timestamp: i64,
         max_entrants: u64,
@@ -77,7 +75,7 @@ pub mod raffle {
             RaffleError::InvaliedMetadata
         );
 
-        let mut collection = ctx.accounts.collection.load_mut()?;
+        let collection = ctx.accounts.collection.load_mut()?;
 
         // verify metadata is legit
         let nft_metadata = Metadata::from_account_info(mint_metadata)?;
@@ -85,7 +83,7 @@ pub mod raffle {
             let mut valid: u8 = 0;
             for creator in creators {
                 for j in 0..collection.count  {
-                    if creator.address == collection[j as usize] && creator.verified == true
+                    if creator.address == collection.colletions[j as usize] && creator.verified == true
                     {
                         valid = 1;
                         break;
@@ -144,7 +142,7 @@ pub mod raffle {
      * @param global_bump: global_authority's bump
      * @param amount: the amount of the tickets
      */
-    pub fn buy_tickets(ctx: Context<BuyTickets>, global_bump: u8, amount: u64) -> Result<()> {
+    pub fn buy_tickets(ctx: Context<BuyTickets>, _global_bump: u8, amount: u64) -> Result<()> {
         let timestamp = Clock::get()?.unix_timestamp;
         let mut raffle = ctx.accounts.raffle.load_mut()?;
 
@@ -187,7 +185,7 @@ pub mod raffle {
             ctx.accounts.buyer.to_account_info(),
             ctx.accounts.creator.to_account_info(),
             ctx.accounts.system_program.to_account_info(),
-            total_amount_sol,
+            creator_amount,
         )?;
 
         // Transfer COMMISSION_FEE SOL from the buyer to the treasury wallet 
@@ -196,7 +194,7 @@ pub mod raffle {
             ctx.accounts.buyer.to_account_info(),
             ctx.accounts.treasury_wallet.to_account_info(),
             ctx.accounts.system_program.to_account_info(),
-            total_amount_sol,
+            fee_amount,
         )?;
 
         Ok(())
@@ -217,7 +215,7 @@ pub mod raffle {
         }
 
         // Get the random number of the entrant amount
-        let (player_address, bump) = Pubkey::find_program_address(
+        let (player_address, _bump) = Pubkey::find_program_address(
             &[
                 RANDOM_SEED.as_bytes(),
                 timestamp.to_string().as_bytes(),
@@ -231,7 +229,8 @@ pub mod raffle {
         }
         mul += u64::from(char_vec[7]);
         let winner_index = mul % raffle.count;
-        raffle.index = winner_index;
+        raffle.winner_index = winner_index;
+        raffle.winner = raffle.entrants[winner_index as usize];
 
         Ok(())
     }
@@ -249,8 +248,7 @@ pub mod raffle {
         if timestamp < raffle.end_timestamp {
             return Err(error!(RaffleError::RaffleNotEnded));
         }
-        let index: usize = raffle.winner_index as usize;
-        if raffle.entrants[index] != ctx.accounts.claimer.key() {
+        if raffle.winner != ctx.accounts.claimer.key() {
             return Err(error!(RaffleError::NotWinner));
         }
 
@@ -346,7 +344,6 @@ pub struct Initialize<'info> {
 }
 
 #[derive(Accounts)]
-#[instruction(bump: u8)]
 pub struct AddCollection<'info> {
     #[account(mut)]
     pub admin: Signer<'info>,
@@ -359,14 +356,14 @@ pub struct AddCollection<'info> {
 }
 
 #[derive(Accounts)]
-#[instruction(global_bump: u8)]
+#[instruction(_global_bump: u8)]
 pub struct CreateRaffle<'info> {
     #[account(mut)]
     pub admin: Signer<'info>,
     #[account(
         mut,
         seeds = [GLOBAL_AUTHORITY_SEED.as_ref()],
-        bump = global_bump,
+        bump,
     )]
     pub global_authority: Account<'info, GlobalPool>,
 
@@ -401,12 +398,13 @@ pub struct CreateRaffle<'info> {
     pub token_program: Program<'info, Token>,
 
     // the token metadata program
+    /// CHECK: This is not dangerous because we don't read or write from this account
     #[account(constraint = token_metadata_program.key == &metaplex_token_metadata::ID)]
     pub token_metadata_program: AccountInfo<'info>,
 }
 
 #[derive(Accounts)]
-#[instruction(global_bump: u8)]
+#[instruction(_global_bump: u8)]
 pub struct BuyTickets<'info> {
     #[account(mut)]
     pub buyer: Signer<'info>,
@@ -417,7 +415,7 @@ pub struct BuyTickets<'info> {
     #[account(
         mut,
         seeds = [GLOBAL_AUTHORITY_SEED.as_ref()],
-        bump = global_bump,
+        bump,
     )]
     pub global_authority: Account<'info, GlobalPool>,
     /// CHECK: This is not dangerous because we don't read or write from this account
@@ -427,7 +425,7 @@ pub struct BuyTickets<'info> {
     /// CHECK: This is not dangerous because we don't read or write from this account
     #[account(
         mut,
-        constraint = treasury_wallet.key() = TREASURY_WALLET.parse::<Pubkey>().unwrap() 
+        constraint = treasury_wallet.key() == TREASURY_WALLET.parse::<Pubkey>().unwrap() 
     )]
     pub treasury_wallet: AccountInfo<'info>,
 
@@ -452,7 +450,7 @@ pub struct ClaimReward<'info> {
     #[account(
         mut,
         seeds = [GLOBAL_AUTHORITY_SEED.as_ref()],
-        bump = global_bump,
+        bump,
     )]
     pub global_authority: Account<'info, GlobalPool>,
 
@@ -487,7 +485,7 @@ pub struct WithdrawNft<'info> {
     #[account(
         mut,
         seeds = [GLOBAL_AUTHORITY_SEED.as_ref()],
-        bump = global_bump,
+        bump,
     )]
     pub global_authority: Account<'info, GlobalPool>,
 

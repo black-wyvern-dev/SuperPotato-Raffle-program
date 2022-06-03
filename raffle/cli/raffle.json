@@ -16,6 +16,11 @@
           "isSigner": false
         },
         {
+          "name": "collection",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
           "name": "systemProgram",
           "isMut": false,
           "isSigner": false
@@ -32,6 +37,27 @@
           "type": "u8"
         }
       ]
+    },
+    {
+      "name": "addCollection",
+      "accounts": [
+        {
+          "name": "admin",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "collection",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "collectionId",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
     },
     {
       "name": "createRaffle",
@@ -52,6 +78,11 @@
           "isSigner": false
         },
         {
+          "name": "collection",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
           "name": "ownerTempNftAccount",
           "isMut": true,
           "isSigner": false
@@ -67,7 +98,17 @@
           "isSigner": false
         },
         {
+          "name": "mintMetadata",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
           "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenMetadataProgram",
           "isMut": false,
           "isSigner": false
         }
@@ -78,28 +119,12 @@
           "type": "u8"
         },
         {
-          "name": "ticketPricePrey",
-          "type": "u64"
-        },
-        {
           "name": "ticketPriceSol",
           "type": "u64"
         },
         {
           "name": "endTimestamp",
           "type": "i64"
-        },
-        {
-          "name": "winnerCount",
-          "type": "u64"
-        },
-        {
-          "name": "rewardAmount",
-          "type": "u64"
-        },
-        {
-          "name": "whitelisted",
-          "type": "u64"
         },
         {
           "name": "maxEntrants",
@@ -131,18 +156,8 @@
           "isSigner": false
         },
         {
-          "name": "userTokenAccount",
+          "name": "treasuryWallet",
           "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "tokenMint",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "tokenProgram",
-          "isMut": false,
           "isSigner": false
         },
         {
@@ -203,16 +218,6 @@
         },
         {
           "name": "srcNftTokenAccount",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "srcPreyTokenAccount",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "claimerPreyTokenAccount",
           "isMut": true,
           "isSigner": false
         },
@@ -295,6 +300,27 @@
       }
     },
     {
+      "name": "CollectionPool",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "count",
+            "type": "u64"
+          },
+          {
+            "name": "colletions",
+            "type": {
+              "array": [
+                "publicKey",
+                400
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
       "name": "RafflePool",
       "type": {
         "kind": "struct",
@@ -312,10 +338,6 @@
             "type": "u64"
           },
           {
-            "name": "winnerCount",
-            "type": "u64"
-          },
-          {
             "name": "noRepeat",
             "type": "u64"
           },
@@ -324,51 +346,24 @@
             "type": "u64"
           },
           {
-            "name": "endTimestamp",
+            "name": "startTimestamp",
             "type": "i64"
           },
           {
-            "name": "ticketPricePrey",
-            "type": "u64"
+            "name": "endTimestamp",
+            "type": "i64"
           },
           {
             "name": "ticketPriceSol",
             "type": "u64"
           },
           {
-            "name": "rewardAmount",
+            "name": "claimed",
             "type": "u64"
           },
           {
-            "name": "whitelisted",
+            "name": "winnerIndex",
             "type": "u64"
-          },
-          {
-            "name": "claimedWinner",
-            "type": {
-              "array": [
-                "u64",
-                50
-              ]
-            }
-          },
-          {
-            "name": "indexes",
-            "type": {
-              "array": [
-                "u64",
-                50
-              ]
-            }
-          },
-          {
-            "name": "winner",
-            "type": {
-              "array": [
-                "publicKey",
-                50
-              ]
-            }
           },
           {
             "name": "entrants",
@@ -441,58 +436,73 @@
     },
     {
       "code": 6011,
-      "name": "NotEnoughToken",
-      "msg": "You don't have enough token"
-    },
-    {
-      "code": 6012,
       "name": "NotEnoughSOL",
       "msg": "You don't have enough SOL"
     },
     {
-      "code": 6013,
+      "code": 6012,
       "name": "NotEnoughTicketsLeft",
       "msg": "Not enough tickets left"
     },
     {
-      "code": 6014,
+      "code": 6013,
       "name": "RaffleStillRunning",
       "msg": "Raffle is still running"
     },
     {
-      "code": 6015,
+      "code": 6014,
       "name": "WinnersAlreadyDrawn",
       "msg": "Winner already drawn"
     },
     {
-      "code": 6016,
+      "code": 6015,
       "name": "WinnerNotDrawn",
       "msg": "Winner not drawn"
     },
     {
-      "code": 6017,
+      "code": 6016,
       "name": "InvalidRevealedData",
       "msg": "Invalid revealed data"
     },
     {
-      "code": 6018,
+      "code": 6017,
       "name": "TokenAccountNotOwnedByWinner",
       "msg": "Ticket account not owned by winner"
     },
     {
-      "code": 6019,
+      "code": 6018,
       "name": "TicketHasNotWon",
       "msg": "Ticket has not won"
     },
     {
-      "code": 6020,
+      "code": 6019,
       "name": "UnclaimedPrizes",
       "msg": "Unclaimed prizes"
     },
     {
-      "code": 6021,
+      "code": 6020,
       "name": "InvalidRecentBlockhashes",
       "msg": "Invalid recent blockhashes"
+    },
+    {
+      "code": 6021,
+      "name": "InvalidCollection",
+      "msg": "Invalid Collections"
+    },
+    {
+      "code": 6022,
+      "name": "InvaliedMetadata",
+      "msg": "Invalid Metadata Address"
+    },
+    {
+      "code": 6023,
+      "name": "MetadataCreatorParseError",
+      "msg": "Can't Parse The NFT's Creators"
+    },
+    {
+      "code": 6024,
+      "name": "UnkownOrNotAllowedNFTCollection",
+      "msg": "Unknown Collection Or The Collection Is Not Allowed"
     }
   ]
 }

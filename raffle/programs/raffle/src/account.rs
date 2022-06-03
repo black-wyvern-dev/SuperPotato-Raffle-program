@@ -27,7 +27,7 @@ pub struct CollectionPool {
 
 #[account(zero_copy)]
 pub struct RafflePool {
-    // 32*2000+8*9 +64 = 64136
+    // 32*2000+8*9 +96 = 64168
     pub creator: Pubkey,       //32
     pub nft_mint: Pubkey,      //32
     pub count: u64,            //8
@@ -38,7 +38,7 @@ pub struct RafflePool {
     pub ticket_price_sol: u64, //8
     pub claimed: u64,          //8
     pub winner_index: u64,     //8
-    // pub winner: Pubkey,                   //32
+    pub winner: Pubkey,                   //32
     pub entrants: [Pubkey; MAX_ENTRANTS], //32*2000
 }
 
@@ -56,7 +56,7 @@ impl Default for RafflePool {
             ticket_price_sol: 0,
             claimed: 0,
             winner_index: 0,
-            // winner: Pubkey::default(),
+            winner: Pubkey::default(),
             entrants: [Pubkey::default(); MAX_ENTRANTS],
         }
     }

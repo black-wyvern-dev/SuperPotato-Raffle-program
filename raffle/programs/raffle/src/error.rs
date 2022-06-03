@@ -46,6 +46,9 @@ pub enum RaffleError {
     #[msg("Invalid recent blockhashes")]
     InvalidRecentBlockhashes,
 
+    #[msg("Invalid Collections")]
+    InvalidCollection,
+
     #[msg("Invalid Metadata Address")]
     InvaliedMetadata,
     #[msg("Can't Parse The NFT's Creators")]
