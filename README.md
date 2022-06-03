@@ -16,9 +16,9 @@ Able to test the script functions working in this way.
 - Confirm the `ANCHOR_WALLET` environment variable of the `ts-node` script in `package.json`
 - Run `yarn ts-node`
 
-## Features
+# Features
 
-###  How to deploy this program?
+##  How to deploy this program?
 First of all, you have to git clone in your PC.
 In the folder `raffle`, in the terminal 
 1. `yarn`
@@ -35,7 +35,7 @@ The program address will default to this keypair (override with --program-id):
 5. Please add this pubkey to the lib.rs
   `line 20: declare_id!("7M...KWJ");`
 6. Please add this pubkey to the Achor.toml
-  `line 4: raffle = "7M...KWJ"
+  `line 4: raffle = "7M...KWJ"`
 7. Please add this pubkey to the scripts.ts
   `line 21: const PROGRAM_ID = "7M...KWJ";`
 8. `anchor build` again
@@ -48,8 +48,12 @@ The program address will default to this keypair (override with --program-id):
 12. If this error comes - `Error: Provider local is not available on browser.`, `export BRWOSER=`
 13. `yarn ts-node`
 
+<p align = "center">
+Then, you can enjoy this program 🎭
+</p>
+</br>
 
-Then you can enjoy this program 🎭
+## How to use?
 
 ### - As a Smart Contract Owner
 For the first time use, the Smart Contract Owner should `initialize` the Smart Contract for global account allocation.
