@@ -1,4 +1,4 @@
-# 🖼 Mindfolk NFT Raffle | Solan | Next.js + Typescript
+# 🖼 SuperPotato NFT Raffle | Solan | Next.js + Typescript
 
 <p align="center">
     <video autoplay="" loop="" style="background-image:url(https://www.mindfolk.art/videos/mf-poster-00001.jpg)" muted="" height="200">
