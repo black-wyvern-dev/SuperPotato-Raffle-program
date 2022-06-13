@@ -26,11 +26,11 @@ In the folder `raffle`, in the terminal
    In the last sentence you can see:  
 ```
  To deploy this program:
-  $ solana program deploy /home/ubuntu/apollo/Alfred-Raffle-program/raffle/target/deploy/raffle.so
+  $ solana program deploy /home/.../raffle/target/deploy/raffle.so
 The program address will default to this keypair (override with --program-id):
-  /home/ubuntu/apollo/Alfred-Raffle-program/raffle/target/deploy/raffle-keypair.json
+  /home/.../raffle/target/deploy/raffle-keypair.json
 ```  
-3. `solana-keygen pubkey /home/ubuntu/apollo/Alfred-Raffle-program/raffle/target/deploy/raffle-keypair.json`
+3. `solana-keygen pubkey /home/.../raffle/target/deploy/raffle-keypair.json`
 4. You can get the pubkey of the program ID : ex."7M...KWJ"
 5. Please add this pubkey to the lib.rs
   `line 20: declare_id!("7M...KWJ");`
@@ -39,7 +39,7 @@ The program address will default to this keypair (override with --program-id):
 7. Please add this pubkey to the scripts.ts
   `line 21: const PROGRAM_ID = "7M...KWJ";`
 8. `anchor build` again
-9. `solana program deploy /home/ubuntu/apollo/Alfred-Raffle-program/raffle/target/deploy/raffle.so`
+9. `solana program deploy /home/.../raffle/target/deploy/raffle.so`
 10. In the script.ts code, `line 54 decomment`
 ```js
     await initProject();
