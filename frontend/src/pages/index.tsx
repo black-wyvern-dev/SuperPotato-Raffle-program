@@ -12,13 +12,15 @@ import MyRaffleList from "../components/MyRaffleList";
 import NFTCard from "../components/NFTCard";
 import NFTCardSkeleton from "../components/NFTCardSkeleton";
 import RaffleDetail from "../components/RaffleDetail";
+import { successAlertBottom } from "../components/toastGroup";
 import { LIVE_URL } from "../config";
 import { getGlobalAllData } from "../contexts/transaction";
 import { RaffleDetailType } from "../contexts/types";
 
 export default function HomePage(props: {
   startLoading: Function,
-  closeLoading: Function
+  closeLoading: Function,
+  pageLoading: boolean
 }) {
   const { startLoading, closeLoading } = props;
   const [showDetail, setShowDetail] = useState(false);
@@ -32,6 +34,8 @@ export default function HomePage(props: {
     raffleKey: "",
     image: "",
     name: "",
+    collectionName: "",
+    collectionId: "",
     maxEntrants: 0,
     endTimestamp: 0,
     ticketPriceSol: 0,
@@ -39,13 +43,16 @@ export default function HomePage(props: {
     count: 0,
     raffleId: "",
     creator: "",
-    twitter: ""
+    twitter: "",
+    raffleStatus: 0,
   });
   const [raffleMineDetail, setRaffleMineDetail] = useState<RaffleDetailType>({
     nftMint: "",
     raffleKey: "",
     image: "",
     name: "",
+    collectionName: "",
+    collectionId: "",
     maxEntrants: 0,
     endTimestamp: 0,
     ticketPriceSol: 0,
@@ -53,7 +60,8 @@ export default function HomePage(props: {
     count: 0,
     raffleId: "",
     creator: "",
-    twitter: ""
+    twitter: "",
+    raffleStatus: 0,
   });
   const [keyword, setKeyword] = useState("");
   const [sort, setSort] = useState("Recently Added");
@@ -109,26 +117,30 @@ export default function HomePage(props: {
     setIsLoading(true);
     const now = new Date().getTime();
     const data = await getGlobalAllData();
+    console.log(data, "===> global data")
     const filterData: any = [];
     if (data && data?.length !== 0) {
       for (let item of data) {
         if (item) {
-          let dbData: any = [];
-          const q = query(collection(db, "raffles"), where("raffleKey", "==", item?.raffleKey));
-          const querySnapshot = await getDocs(q);
-          querySnapshot.forEach((doc) => {
-            dbData = doc.data();
-            dbData.id = doc.id;
+          let dbRaffleData: any = [];
+          const qRaffle = query(collection(db, "raffles"), where("raffleKey", "==", item?.raffleKey));
+          const querySnapshotRaffle = await getDocs(qRaffle);
+          querySnapshotRaffle.forEach((doc) => {
+            dbRaffleData = doc.data();
+            dbRaffleData.id = doc.id;
           });
           if (headTab === "all") {
             filterData.push({
               nftMint: item.nftMint.toBase58(),
               raffleKey: item.raffleKey,
               endTimestamp: item.endTimestamp.toNumber(),
-              createTimeStamp: dbData.createTimeStamp,
-              twitter: dbData.twitter,
+              createTimeStamp: dbRaffleData.createTimeStamp,
+              twitter: dbRaffleData.twitter,
               ticketPriceSol: item.ticketPriceSol.toNumber() / LAMPORTS_PER_SOL,
-              id: dbData.id,
+              id: dbRaffleData.id,
+              collectionName: dbRaffleData.collectionName,
+              collecionId: dbRaffleData.collectionId,
+              raffleStatus: dbRaffleData.status
             })
           } else if (headTab === "past") {
             if (item.endTimestamp.toNumber() < now / 1000) {
@@ -136,15 +148,19 @@ export default function HomePage(props: {
                 nftMint: item.nftMint.toBase58(),
                 raffleKey: item.raffleKey,
                 endTimestamp: item.endTimestamp.toNumber(),
-                createTimeStamp: dbData.createTimeStamp,
-                twitter: dbData.twitter,
+                createTimeStamp: dbRaffleData.createTimeStamp,
+                twitter: dbRaffleData.twitter,
                 ticketPriceSol: item.ticketPriceSol.toNumber() / LAMPORTS_PER_SOL,
-                id: dbData.id,
+                id: dbRaffleData.id,
+                collectionName: dbRaffleData.collectionName,
+                collecionId: dbRaffleData.collectionId,
+                raffleStatus: dbRaffleData.status
               })
             }
           }
         }
       }
+      filterData.sort((a: any, b: any) => b.createTimeStamp - a.createTimeStamp);
       if (sort === "recent") {
         filterData.sort((a: any, b: any) => b.createTimeStamp - a.createTimeStamp);
       } else if (sort === "older") {
@@ -154,6 +170,7 @@ export default function HomePage(props: {
       } else if (sort === "price-h-l") {
         filterData.sort((a: any, b: any) => b.ticketPriceSol - a.ticketPriceSol);
       }
+      console.log(filterData, "==> filterData")
 
       setRaffles(filterData);
     }
@@ -164,45 +181,39 @@ export default function HomePage(props: {
     setShowRegister(status);
   }
 
-  useEffect(() => {
-    getGlobalData();
-    // eslint-disable-next-line
-  }, [sort, headTab]);
+  // useEffect(() => {
+  //   getGlobalData();
+  //   // eslint-disable-next-line
+  // }, [sort, headTab]);
 
   useEffect(() => {
-    const collectionRefCollections = collection(db, "collections");
-    const qCollections = query(collectionRefCollections);
     const collectionRefRaffles = collection(db, "raffles");
     const qRaffles = query(collectionRefRaffles);
-    onSnapshot(qCollections, () => {
-      getGlobalData();
-    });
     onSnapshot(qRaffles, () => {
       getGlobalData();
     });
-    return;
     // eslint-disable-next-line
-  }, [])
+  }, [sort, headTab])
 
   return (
     <>
       <NextSeo
-        title="Mindfolk | NFT Raffle"
-        description="There is magic in their pipes, and more ideas in their minds! Some say it is from the wood found in the forests of the lush Peninsula, upon which their Schooners wrecked. Having left their over-populated lands in search of greener shores, the 777 hatted individuals known as the Mindfolk have set-out to introduce new architectural structures within their environment."
+        title="Super Potato | NFT Raffle"
+        description="There is magic in their pipes, and more ideas in their minds! Some say it is from the wood found in the forests of the lush Peninsula, upon which their Schooners wrecked. Having left their over-populated lands in search of greener shores, the 777 hatted individuals known as the Super Potato have set-out to introduce new architectural structures within their environment."
         openGraph={{
           url: `${LIVE_URL}`,
-          title: 'Mindfolk | NFT Raffle',
-          description: 'There is magic in their pipes, and more ideas in their minds! Some say it is from the wood found in the forests of the lush Peninsula, upon which their Schooners wrecked. Having left their over-populated lands in search of greener shores, the 777 hatted individuals known as the Mindfolk have set-out to introduce new architectural structures within their environment.',
+          title: 'Super Potato | NFT Raffle',
+          description: 'There is magic in their pipes, and more ideas in their minds! Some say it is from the wood found in the forests of the lush Peninsula, upon which their Schooners wrecked. Having left their over-populated lands in search of greener shores, the 777 hatted individuals known as the Super Potato have set-out to introduce new architectural structures within their environment.',
           images: [
             {
               url: `${LIVE_URL}og-cover.png`,
               width: 1200,
               height: 600,
-              alt: 'Mindfolk',
+              alt: 'Super Potato',
               type: 'image/png',
             }
           ],
-          site_name: 'Mindfolk',
+          site_name: 'Super Potato',
         }}
       />
       <main>
@@ -226,12 +237,16 @@ export default function HomePage(props: {
                   showDetail={() => handleDetail(true)}
                   closeDetail={() => handleDetail(false)}
                   setDetail={(e: any) => setRaffleDetail(e)}
+                  raffleStatus={item.raffleStatus}
                   wallet={wallet}
                   startLoading={() => startLoading()}
                   closeLoading={() => closeLoading()}
                   updatePage={() => getGlobalData()}
                   keyword={keyword}
                   headTab={headTab}
+                  collectionName={item.collectionName}
+                  collectionId={item.collectionId}
+                  pageLoading={props.pageLoading}
                 />
               ))}
             </div>
@@ -254,6 +269,7 @@ export default function HomePage(props: {
           closeLoading={() => closeLoading()}
           getGlobalData={() => getGlobalData()}
           setDetail={(e: any) => setRaffleDetail(e)}
+          pageLoading={props.pageLoading}
         />
         <MyRaffleList
           showedDetail={showMineDetail}
@@ -264,6 +280,7 @@ export default function HomePage(props: {
           closeLoading={() => closeLoading()}
           getGlobalData={() => getGlobalData()}
           setDetail={(e: any) => setRaffleMineDetail(e)}
+          pageLoading={props.pageLoading}
         />
         <CreateRaffle
           showCreated={showCreate}
@@ -274,6 +291,7 @@ export default function HomePage(props: {
           startLoading={() => startLoading()}
           closeLoading={() => closeLoading()}
           getAllData={() => getGlobalData()}
+          pageLoading={props.pageLoading}
         />
         <CollectionRegister
           showRegister={showRegister}

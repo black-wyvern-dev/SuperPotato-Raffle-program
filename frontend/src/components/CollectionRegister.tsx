@@ -70,6 +70,7 @@ export default function CollectionRegister(props:
             })
                 .then(() => {
                     successAlert("A request to register of a collection has been sent!");
+                    props.closeRegister();
                 })
                 .catch((error) => {
                     console.log(error)

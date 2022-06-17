@@ -10,11 +10,15 @@ function RaffleApp({ Component, pageProps }) {
     <Wallet>
       <Component
         {...pageProps}
+        pageLoading={loading}
         startLoading={() => setLoading(true)}
         closeLoading={() => setLoading(false)}
       />
-      <ToastContainer style={{ fontSize: 15 }} />
-      <PageLoading loading={loading} />
+      <ToastContainer
+        style={{ fontSize: 15 }}
+        pauseOnFocusLoss={false}
+      />
+      {/* <PageLoading loading={loading} /> */}
     </Wallet>
   )
 }

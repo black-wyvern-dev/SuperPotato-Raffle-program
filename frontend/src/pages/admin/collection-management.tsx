@@ -6,15 +6,17 @@ import { useEffect, useState } from "react"
 import CopyAddress from "../../components/CopyAddress";
 import { ADMINS } from "../../config";
 import { Dialog } from "@mui/material";
-import { collection, doc, getDocs, onSnapshot, query, updateDoc } from "firebase/firestore";
+import { collection, doc, getDocs, onSnapshot, orderBy, query, updateDoc, where } from "firebase/firestore";
 import { collectionsInstance, database, db } from "../../api/firebase";
 import { successAlert } from "../../components/toastGroup";
 import { addCollection, getCollectionState } from "../../contexts/transaction";
 import { PublicKey } from "@solana/web3.js";
+import HashLoader from "react-spinners/HashLoader";
 
 export default function CollectionManagement(props: {
     startLoading: Function,
-    closeLoading: Function
+    closeLoading: Function,
+    pageLoading: boolean
 }) {
     const { startLoading, closeLoading } = props;
     const router = useRouter();
@@ -27,7 +29,6 @@ export default function CollectionManagement(props: {
                 const collections = (data.docs.map((item: any) => {
                     return ({ ...item.data(), id: item.id })
                 }));
-                console.log(collections, "collections")
                 setCollections(collections)
             }).catch((error) => {
                 console.log(error)
@@ -50,7 +51,7 @@ export default function CollectionManagement(props: {
 
     useEffect(() => {
         const collectionRefToken = collection(db, "collections");
-        const q = query(collectionRefToken);
+        const q = query(collectionRefToken, orderBy("createTimeStamp", "desc"));
         onSnapshot(q, () => {
             getCollections();
         });
@@ -92,6 +93,7 @@ export default function CollectionManagement(props: {
                                     wallet={wallet}
                                     startLoading={() => startLoading()}
                                     closeLoading={() => closeLoading()}
+                                    pageLoading={props.pageLoading}
                                 />
                             ))
                             }
@@ -112,11 +114,15 @@ const ManageRow = (props: {
     id: string,
     wallet: WalletContextState,
     startLoading: Function,
-    closeLoading: Function
+    closeLoading: Function,
+    pageLoading: boolean
 }) => {
     const [projectName, setProjectName] = useState(props.collectionName);
     const [showApprove, setShowApprove] = useState(false);
     const [showDeny, setShowDeny] = useState(false);
+    const [rowStatus, setRowStatus] = useState(0);
+    const [dbId, setDbId] = useState("");
+
     const handleProjectName = (e: any) => {
         setProjectName(e.target.value);
     }
@@ -133,6 +139,16 @@ const ManageRow = (props: {
                 console.log(error)
             })
     }
+    useEffect(() => {
+        const q = query(collection(db, "collections"), where("collectionId", "==", props.collectionId));
+        onSnapshot(q, (querySnapshot) => {
+            querySnapshot.forEach((doc) => {
+                setRowStatus(doc.data().status);
+            });
+        });
+        return;
+        // eslint-disable-next-line
+    }, [])
     return (
         <tr>
             <td>
@@ -152,13 +168,26 @@ const ManageRow = (props: {
 
                 <td>
                     <div className="td-action">
-                        <button
-                            className="btn-accept"
-                            onClick={() => setShowApprove(true)}
-                            disabled={props.accepted}
-                        >
-                            {props.accepted ? "Accepted" : "Accept"}
-                        </button>
+                        {rowStatus === 1 ?
+                            <button
+                                className="btn-accept"
+                                onClick={() => setShowApprove(true)}
+                                disabled={rowStatus === 1}
+                            >
+                                <div className="">
+                                    <HashLoader color={"#000"} size={15} />
+                                    <span style={{ marginLeft: 16 }}>Accepting...</span>
+                                </div>
+                            </button>
+                            :
+                            <button
+                                className="btn-accept"
+                                onClick={() => setShowApprove(true)}
+                                disabled={props.accepted}
+                            >
+                                {props.accepted ? "Accepted" : "Accept"}
+                            </button>
+                        }
                         <button
                             className="btn-deny"
                             onClick={() => setShowDeny(true)}
@@ -174,6 +203,7 @@ const ManageRow = (props: {
                             collectionId={props.collectionId}
                             startLoading={() => props.startLoading()}
                             closeLoading={() => props.closeLoading()}
+                            id={props.id}
                         />
                         <CancelDialog
                             opened={showDeny}
@@ -191,7 +221,16 @@ const ManageRow = (props: {
     )
 }
 
-const ApproveDialog = (props: { opened: boolean, onClose: Function, saveDataBase: Function, wallet: WalletContextState, collectionId: string, startLoading: Function, closeLoading: Function }) => {
+const ApproveDialog = (props: {
+    opened: boolean,
+    onClose: Function,
+    saveDataBase: Function,
+    wallet: WalletContextState,
+    collectionId: string,
+    startLoading: Function,
+    closeLoading: Function,
+    id: string
+}) => {
     const saveCollection = async () => {
         props.onClose();
         try {
@@ -199,14 +238,14 @@ const ApproveDialog = (props: { opened: boolean, onClose: Function, saveDataBase
             let able = false;
             if (collectionData && collectionData.count.toNumber() !== 0) {
                 for (let item of collectionData.collections) {
-                    console.log(item.toBase58())
                     if (item.toBase58() === props.collectionId) {
                         able = true;
                     }
                 }
             }
             if (!able) {
-                await addCollection(props.wallet, new PublicKey(props.collectionId), () => props.startLoading(), () => props.closeLoading(), () => props.saveDataBase());
+                console.log(props.id)
+                await addCollection(props.wallet, new PublicKey(props.collectionId), props.id);
             } else {
                 props.saveDataBase();
             }

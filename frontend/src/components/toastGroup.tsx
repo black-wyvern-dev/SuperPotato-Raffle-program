@@ -13,6 +13,17 @@ export const errorAlert = (text: string) => {
     })
 }
 
+export const errorAlertBottom = (text: string) => {
+    toast.error(text, {
+        position: "bottom-left",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        theme: "dark"
+    })
+}
 export const errorAlertCenter = (text: string) => {
     toast.error(text, {
         position: "bottom-center",
@@ -37,6 +48,18 @@ export const warningAlert = (text: string) => {
     })
 }
 
+export const warningAlertBottom = (text: string) => {
+    toast.warning(text, {
+        position: "bottom-left",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        theme: "dark"
+    })
+}
+
 export const successAlert = (text: string) => {
     toast.success(text, {
         position: "top-right",
@@ -49,9 +72,33 @@ export const successAlert = (text: string) => {
     })
 }
 
+export const successAlertBottom = (text: string) => {
+    toast.success(text, {
+        position: "bottom-left",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        theme: "dark"
+    })
+}
+
 export const infoAlert = (text: string) => {
     toast.info(text, {
         position: "top-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        theme: "dark"
+    })
+}
+
+export const infoAlertBottom = (text: string) => {
+    toast.info(text, {
+        position: "bottom-left",
         autoClose: 5000,
         hideProgressBar: false,
         closeOnClick: true,

@@ -18,6 +18,7 @@ export default function MyRaffleList(props: {
     closeLoading: Function,
     getGlobalData: Function,
     setDetail: Function,
+    pageLoading: boolean
 }) {
     const { showedDetail, closeDetail, raffleDetail, startLoading, closeLoading } = props;
     const wallet = useWallet();
@@ -59,6 +60,8 @@ export default function MyRaffleList(props: {
                                 twitter: dbData.twitter,
                                 ticketPriceSol: item.ticketPriceSol.toNumber() / LAMPORTS_PER_SOL,
                                 id: dbData.id,
+                                collectionName: dbData.collectionName,
+                                collectionId: dbData.collectionId,
                             })
                         if (item.winner.toBase58() === wallet.publicKey?.toBase58())
                             wons.push({
@@ -69,11 +72,12 @@ export default function MyRaffleList(props: {
                                 twitter: dbData.twitter,
                                 ticketPriceSol: item.ticketPriceSol.toNumber() / LAMPORTS_PER_SOL,
                                 id: dbData.id,
+                                collectionName: dbData.collectionName,
+                                collectionId: dbData.collectionId,
                             })
                     }
                 }
             }
-            console.log(profileList, "====>profilelist")
             setCreatorProfile(profileList);
             setWonRaffles(wons);
             setIsLoading(false);
@@ -121,12 +125,17 @@ export default function MyRaffleList(props: {
                                     showedDetail={props.showedDetail}
                                     closeDetail={props.closeDetail}
                                     setDetail={props.setDetail}
+                                    raffleStatus={item.raffleStatus}
                                     wallet={wallet}
                                     startLoading={() => startLoading()}
                                     closeLoading={() => closeLoading()}
                                     updatePage={() => props.getGlobalData()}
                                     keyword={""}
-                                    headTab={""} />
+                                    headTab={""}
+                                    collectionName={item.collectionName}
+                                    collectionId={item.collectionId}
+                                    pageLoading={props.pageLoading}
+                                />
                             ))}
                         </div>
                         :
@@ -154,12 +163,17 @@ export default function MyRaffleList(props: {
                                     showedDetail={props.showedDetail}
                                     closeDetail={props.closeDetail}
                                     setDetail={props.setDetail}
+                                    raffleStatus={item.raffleStatus}
                                     wallet={wallet}
                                     startLoading={() => startLoading()}
                                     closeLoading={() => closeLoading()}
                                     updatePage={() => props.getGlobalData()}
                                     keyword={""}
-                                    headTab={""} />
+                                    headTab={""}
+                                    collectionName={item.collectionName}
+                                    collectionId={item.collectionId}
+                                    pageLoading={props.pageLoading}
+                                />
                             ))}
                         </div>
                         :

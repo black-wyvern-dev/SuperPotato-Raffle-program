@@ -32,7 +32,6 @@ export default function Header({ onKeyword, headTab, onHeadTab, onSort, ...props
         onKeyword(e.target.value);
     }
     const handleSort = (e) => {
-        console.log(e.value)
         onSort(e.value)
     }
     const handleTab = (tab) => {

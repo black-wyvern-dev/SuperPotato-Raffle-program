@@ -11,24 +11,24 @@ import { DECIMALS, GLOBAL_AUTHORITY_SEED, METAPLEX, PROGRAM_ID, RAFFLE_SIZE, TRE
 import { WalletContextState } from '@solana/wallet-adapter-react';
 import { solConnection } from './utils';
 import { IDL } from './raffle';
-import { infoAlert, successAlert } from '../components/toastGroup';
+import { errorAlert, errorAlertBottom, infoAlert, infoAlertBottom, successAlert, successAlertBottom, warningAlert, warningAlertBottom } from '../components/toastGroup';
 import { addDoc, collection, doc, getDoc, getDocs, query, updateDoc, where } from 'firebase/firestore';
 import { database, db, rafflesInstance } from '../api/firebase';
 
 export const addCollection = async (
     wallet: WalletContextState,
     collectionId: PublicKey,
-    startLoading: Function,
-    closeLoading: Function,
-    updatePage: Function
+    id: string
 ) => {
     if (!wallet.publicKey) return;
     let userAddress: PublicKey = wallet.publicKey;
     let cloneWindow: any = window;
     let provider = new anchor.AnchorProvider(solConnection, cloneWindow['solana'], anchor.AnchorProvider.defaultOptions())
     const program = new anchor.Program(IDL as anchor.Idl, PROGRAM_ID, provider);
+    const collectionById = doc(database, 'collections', id);
+    let timeout: any;
+    let timeInterval: any;
     try {
-        startLoading();
         let state: GlobalPool | null = await getGlobalState();
         if (state === null) return;
         let admin = state.superAdmin;
@@ -48,21 +48,98 @@ export const addCollection = async (
                 instructions: [],
                 signers: [],
             }
-        ))
+        ));
+
+        await updateDoc(collectionById, {
+            status: 1,
+            updateTimeStamp: new Date().getTime()
+        })
+            .then(() => {
+                successAlertBottom("Transaction request has been sent.");
+            })
+            .catch((error) => {
+                console.log(error);
+            })
+
         const txId = await wallet.sendTransaction(tx, solConnection);
-        await solConnection.confirmTransaction(txId, "finalized");
-        updatePage();
-        closeLoading();
+
+        await updateDoc(collectionById, {
+            tx: txId,
+            updateTimeStamp: new Date().getTime()
+        })
+            .then(() => {
+                console.log("database added...")
+            })
+
+        console.log(`https://public-api.solscan.io/transaction/${txId}`);
+
+        timeout = setTimeout(() => {
+            // infoAlertBottom("Checking status...");
+            timeInterval = setInterval(async () => {
+                infoAlertBottom("Checking status...");
+                await fetch(`https://public-api.solscan.io/transaction/${txId}`)
+                    .then(resp =>
+                        resp.json()
+                    ).then(async (json) => {
+                        console.log(json, "===> json");
+                        if (json.status === "Success" && json.signer.length !== 0) {
+                            await updateDoc(collectionById, {
+                                status: 0,
+                                accepted: true,
+                                updateTimeStamp: new Date().getTime()
+                            })
+                                .then(() => {
+                                    clearTimeout(timeout);
+                                    clearInterval(timeInterval);
+                                    successAlert("Transaction is confirmed..");
+                                })
+                        }
+                    })
+                    .catch((error) => {
+                        console.log(error);
+                    })
+            }, 8000)
+        }, 10000);
+
+        // await solConnection.confirmTransaction(txId, "finalized");
+        // clearTimeout(timeout);
+        // clearInterval(timeInterval);
+
         console.log("txHash =", tx);
-    } catch (error) {
-        closeLoading();
-        console.log(error)
+
+    } catch (error: any) {
+        console.log("error msg", error.message);
+        console.log("error code", error.code)
+
+        clearTimeout(timeout);
+        clearInterval(timeInterval);
+        await updateDoc(collectionById, {
+            status: 0,
+            updateTimeStamp: new Date().getTime()
+        })
+            .then(() => {
+                if (error.message) {
+                    // Blockhash not found
+                    if (error.message.indexOf("Blockhash not found") !== -1) {
+                        warningAlertBottom("Blockhash not found. Please try again");
+                    } else {
+                        errorAlertBottom(error.message);
+                    }
+                }
+            })
+            .catch((error) => {
+                console.log(error)
+            })
     }
 }
 
 export const createRaffle = async (
     wallet: WalletContextState,
-    nfts: string[],
+    nfts: {
+        mint: string,
+        collectionName: string,
+        collectionId: string
+    }[],
     ticketPriceSol: number,
     endTimestamp: number,
     max: number,
@@ -76,24 +153,31 @@ export const createRaffle = async (
     let cloneWindow: any = window;
     let provider = new anchor.AnchorProvider(solConnection, cloneWindow['solana'], anchor.AnchorProvider.defaultOptions())
     const program = new anchor.Program(IDL as anchor.Idl, PROGRAM_ID, provider);
+    let timeout: any;
+    let timeInterval: any;
     try {
         startLoading();
         infoAlert("A transaction request has been sent.");
         let transactions: Transaction[] = [];
+        let raffleKeys: PublicKey[] = [];
         for (let item of nfts) {
-            const tx = await createRaffleTx(program, userAddress, new PublicKey(item), ticketPriceSol, endTimestamp, max, twitter);
-            if (tx) transactions.push(tx);
+            const tx = await createRaffleTx(program, userAddress, item, ticketPriceSol, endTimestamp, max, twitter);
+            if (tx !== undefined) {
+                transactions.push(tx.tx);
+                raffleKeys.push(tx.raffleKey);
+            }
         }
 
         let { blockhash } = await provider.connection.getRecentBlockhash("confirmed");
-
+        console.log(blockhash, "===> blockhash create tickets")
         transactions.forEach((transaction) => {
             transaction.feePayer = (wallet.publicKey as PublicKey);
             transaction.recentBlockhash = blockhash;
         });
-
+        console.log(transactions, "===+++++++++++++===> transactions")
         if (wallet.signAllTransactions !== undefined) {
             const signedTransactions = await wallet.signAllTransactions(transactions);
+            console.log(signedTransactions, "===+++++++++++++===> txs")
 
             let signatures = await Promise.all(
                 signedTransactions.map((transaction) =>
@@ -102,22 +186,91 @@ export const createRaffle = async (
                         maxRetries: 3,
                         preflightCommitment: 'confirmed',
                     })
-                    // wallet.sendTransaction(transaction, provider.connection, {maxRetries: 3, preflightCommitment: 'confirmed'})
                 )
             );
 
-            await Promise.all(
-                signatures.map((signature) =>
-                    provider.connection.confirmTransaction(signature, "finalized")
-                )
-            );
+            timeout = setTimeout(() => {
+                // infoAlertBottom("Checking status...");
+                timeInterval = setInterval(async () => {
+                    infoAlertBottom("Checking status...");
+                    for (let i = 0; i < signatures.length; i++) {
+                        console.log(`https://public-api.solscan.io/transaction/${signatures[i]}`);
+
+                        await fetch(`https://public-api.solscan.io/transaction/${signatures[i]}`)
+                            .then(resp =>
+                                resp.json()
+                            ).then(async (json) => {
+                                console.log(json, `===> json ${i}`);
+                                if (json.status === "Success" && json.signer.length !== 0) {
+
+                                    await addDoc(rafflesInstance, {
+                                        raffleKey: raffleKeys[i].toBase58(),
+                                        creator: userAddress.toBase58(),
+                                        nftMint: nfts[i].mint,
+                                        collectionName: nfts[i].collectionName,
+                                        collectionId: nfts[i].collectionId,
+                                        count: 0,
+                                        noRepeat: 0,
+                                        maxEntrants: max,
+                                        startTimestamp: new Date().getTime(),
+                                        endTimestamp: endTimestamp,
+                                        ticketPriceSol: ticketPriceSol,
+                                        claimed: false,
+                                        winnerIndex: "",
+                                        winner: "",
+                                        entrants: 0,
+                                        twitter: twitter,
+                                        createTimeStamp: new Date().getTime(),
+                                        updateTimeStamp: new Date().getTime(),
+                                        status: 0
+                                    })
+                                        .then(() => {
+                                            console.log("added to firestore");
+                                            if (i === signatures.length - 1) {
+                                                clearTimeout(timeout);
+                                                clearInterval(timeInterval);
+                                                closeLoading();
+                                                successAlert("Transaction is confirmed.");
+                                                updatePage();
+                                            }
+                                        })
+                                        .catch((error: any) => {
+                                            console.log(error)
+                                        })
+                                }
+
+                            })
+                            .catch((error) => {
+                                console.log(error);
+                            })
+                    }
+
+                }, 7000)
+            }, 15000);
+
+
+            // await Promise.all(
+            //     signatures.map((signature) =>
+            //         provider.connection.confirmTransaction(signature, "confirmed")
+            //     )
+            // );
+        }
+
+    } catch (error: any) {
+        console.log(error);
+        console.log("error msg", error.message);
+        console.log("error code", error.code)
+        clearTimeout(timeout);
+        clearInterval(timeInterval);
+        if (error.message) {
+            // Blockhash not found
+            if (error.message.indexOf("Blockhash not found") !== -1) {
+                warningAlertBottom("Blockhash not found. Please try again");
+            } else {
+                errorAlertBottom(error.message);
+            }
         }
         closeLoading();
-        successAlert("Transaction confirmed!");
-        updatePage();
-    } catch (error) {
-        closeLoading();
-        console.log(error);
     }
 }
 
@@ -139,6 +292,9 @@ export const buyTicket = async (
         [Buffer.from(GLOBAL_AUTHORITY_SEED)],
         program.programId
     );
+    const collectionById = doc(database, 'raffles', raffleId);
+    let timeout: any;
+    let timeInterval: any;
     try {
         startLoading();
         infoAlert("A transaction request has been sent.");
@@ -164,24 +320,51 @@ export const buyTicket = async (
             }
         ))
         const txId = await wallet.sendTransaction(tx, solConnection);
-        await solConnection.confirmTransaction(txId, "finalized");
-        closeLoading();
+        console.log(`https://public-api.solscan.io/transaction/${txId}`);
 
-        const collectionById = doc(database, 'raffles', raffleId)
-        updateDoc(collectionById, {
-            updateTimeStamp: new Date().getTime()
-        })
-            .then(() => {
-                console.log("ticke sold")
-            })
-            .catch((error) => {
-                console.log(error)
-            });
-        successAlert("Transaction confirmed!");
-        updatePage();
-        console.log("txHash =", txId);
-    } catch (error) {
-        console.log(error)
+        timeout = setTimeout(() => {
+            // infoAlertBottom("Checking status...");
+            timeInterval = setInterval(async () => {
+                infoAlertBottom("Checking status...");
+                await fetch(`https://public-api.solscan.io/transaction/${txId}`)
+                    .then(resp =>
+                        resp.json()
+                    ).then(async (json) => {
+                        console.log(json, "===> json");
+                        if (json.status === "Success" && json.signer.length !== 0) {
+                            await updateDoc(collectionById, {
+                                tx: txId,
+                                updateTimeStamp: new Date().getTime()
+                            })
+                                .then(() => {
+                                    successAlert("Transaction is confirmed.");
+                                    closeLoading();
+                                    updatePage();
+                                    clearTimeout(timeout);
+                                    clearInterval(timeInterval);
+                                })
+                        }
+                    })
+                    .catch((error) => {
+                        console.log(error);
+                    })
+            }, 7000)
+        }, 10000);
+    } catch (error: any) {
+        console.log(error);
+        console.log("error msg", error.message);
+        console.log("error code", error.code)
+        clearTimeout(timeout);
+        clearInterval(timeInterval);
+        if (error.message) {
+            // Blockhash not found
+            if (error.message.indexOf("Blockhash not found") !== -1) {
+                warningAlertBottom("Blockhash not found. Please try again");
+            } else {
+                errorAlertBottom(error.message);
+            }
+        }
+        closeLoading();
     }
 
 }
@@ -199,6 +382,9 @@ export const revealWinner = async (
     let cloneWindow: any = window;
     let provider = new anchor.AnchorProvider(solConnection, cloneWindow['solana'], anchor.AnchorProvider.defaultOptions())
     const program = new anchor.Program(IDL as anchor.Idl, PROGRAM_ID, provider);
+    const collectionById = doc(database, 'raffles', raffleId);
+    let timeout: any;
+    let timeInterval: any;
     try {
         startLoading();
         infoAlert("A transaction request has been sent.");
@@ -214,24 +400,52 @@ export const revealWinner = async (
             }
         ))
         const txId = await wallet.sendTransaction(tx, solConnection);
-        await solConnection.confirmTransaction(txId, "finalized");
-        closeLoading();
-        const collectionById = doc(database, 'raffles', raffleId)
-        updateDoc(collectionById, {
-            updateTimeStamp: new Date().getTime()
-        })
-            .then(() => {
-                console.log("ticke sold")
-            })
-            .catch((error) => {
-                console.log(error)
-            });
-        updatePage();
-        console.log("txHash =", tx);
-        successAlert("Transaction confirmed!");
-    } catch (error) {
-        closeLoading();
+        console.log(`https://public-api.solscan.io/transaction/${txId}`);
+
+        timeout = setTimeout(() => {
+            // infoAlertBottom("Checking status...");
+            timeInterval = setInterval(async () => {
+                infoAlertBottom("Checking status...");
+                await fetch(`https://public-api.solscan.io/transaction/${txId}`)
+                    .then(resp =>
+                        resp.json()
+                    ).then(async (json) => {
+                        console.log(json, "===> json");
+                        if (json.status === "Success" && json.signer.length !== 0) {
+                            await updateDoc(collectionById, {
+                                tx: txId,
+                                updateTimeStamp: new Date().getTime()
+                            })
+                                .then(() => {
+                                    clearTimeout(timeout);
+                                    clearInterval(timeInterval);
+                                    closeLoading();
+                                    successAlert("Transaction is confirmed.");
+                                    updatePage();
+                                })
+                        }
+                    })
+                    .catch((error) => {
+                        console.log(error);
+                    })
+            }, 7000)
+        }, 10000);
+
+    } catch (error: any) {
         console.log(error);
+        console.log("error msg", error.message);
+        console.log("error code", error.code)
+        clearTimeout(timeout);
+        clearInterval(timeInterval);
+        if (error.message) {
+            // Blockhash not found
+            if (error.message.indexOf("Blockhash not found") !== -1) {
+                warningAlertBottom("Blockhash not found. Please try again");
+            } else {
+                errorAlertBottom(error.message);
+            }
+        }
+        closeLoading();
     }
 }
 
@@ -253,6 +467,9 @@ export const claimReward = async (
         [Buffer.from(GLOBAL_AUTHORITY_SEED)],
         program.programId
     );
+    const collectionById = doc(database, 'raffles', raffleId);
+    let timeout: any;
+    let timeInterval: any;
     try {
         startLoading();
         infoAlert("A transaction request has been sent.");
@@ -284,26 +501,53 @@ export const claimReward = async (
             }
         ))
         const txId = await wallet.sendTransaction(tx, solConnection);
-        await solConnection.confirmTransaction(txId, "finalized");
-        closeLoading();
-        successAlert("Transaction confirmed!");
 
-        const collectionById = doc(database, 'raffles', raffleId)
-        updateDoc(collectionById, {
-            updateTimeStamp: new Date().getTime()
-        })
-            .then(() => {
-                console.log("ticke sold")
-            })
-            .catch((error) => {
-                console.log(error)
-            });
+        console.log(`https://public-api.solscan.io/transaction/${txId}`);
 
-        updatePage();
-        console.log("txHash =", tx);
-    } catch (error) {
-        closeLoading();
+        timeout = setTimeout(() => {
+            // infoAlertBottom("Checking status...");
+            timeInterval = setInterval(async () => {
+                infoAlertBottom("Checking status...");
+                await fetch(`https://public-api.solscan.io/transaction/${txId}`)
+                    .then(resp =>
+                        resp.json()
+                    ).then(async (json) => {
+                        console.log(json, "===> json");
+                        if (json.status === "Success" && json.signer.length !== 0) {
+                            await updateDoc(collectionById, {
+                                tx: txId,
+                                updateTimeStamp: new Date().getTime()
+                            })
+                                .then(() => {
+                                    successAlert("Transaction is confirmed.");
+                                    closeLoading();
+                                    updatePage();
+                                    clearTimeout(timeout);
+                                    clearInterval(timeInterval);
+                                })
+                        }
+                    })
+                    .catch((error) => {
+                        console.log(error);
+                    })
+            }, 7000)
+        }, 10000);
+
+    } catch (error: any) {
         console.log(error);
+        console.log("error msg", error.message);
+        console.log("error code", error.code)
+        clearTimeout(timeout);
+        clearInterval(timeInterval);
+        if (error.message) {
+            // Blockhash not found
+            if (error.message.indexOf("Blockhash not found") !== -1) {
+                warningAlertBottom("Blockhash not found. Please try again");
+            } else {
+                errorAlertBottom(error.message);
+            }
+        }
+        closeLoading();
     }
 
 }
@@ -326,6 +570,9 @@ export const withdrawNft = async (
         [Buffer.from(GLOBAL_AUTHORITY_SEED)],
         program.programId
     );
+    const collectionById = doc(database, 'raffles', raffleId);
+    let timeout: any;
+    let timeInterval: any;
     try {
         startLoading();
         infoAlert("A transaction request has been sent.");
@@ -357,25 +604,52 @@ export const withdrawNft = async (
         }
         ))
         const txId = await wallet.sendTransaction(tx, solConnection);
-        await solConnection.confirmTransaction(txId, "finalized");
-        closeLoading();
-        successAlert("Transaction confirmed!");
 
-        const collectionById = doc(database, 'raffles', raffleId)
-        updateDoc(collectionById, {
-            updateTimeStamp: new Date().getTime()
-        })
-            .then(() => {
-                console.log("ticke sold")
-            })
-            .catch((error) => {
-                console.log(error)
-            });
+        console.log(`https://public-api.solscan.io/transaction/${txId}`);
 
-        updatePage();
-        console.log("txHash =", tx);
-    } catch (error) {
+        timeout = setTimeout(() => {
+            // infoAlertBottom("Checking status...");
+            timeInterval = setInterval(async () => {
+                infoAlertBottom("Checking status...");
+                await fetch(`https://public-api.solscan.io/transaction/${txId}`)
+                    .then(resp =>
+                        resp.json()
+                    ).then(async (json) => {
+                        console.log(json, "===> json");
+                        if (json.status === "Success" && json.signer.length !== 0) {
+                            await updateDoc(collectionById, {
+                                tx: txId,
+                                updateTimeStamp: new Date().getTime()
+                            })
+                                .then(() => {
+                                    successAlert("Transaction is confirmed.");
+                                    closeLoading();
+                                    updatePage();
+                                    clearTimeout(timeout);
+                                    clearInterval(timeInterval);
+                                })
+                        }
+                    })
+                    .catch((error) => {
+                        console.log(error);
+                    })
+            }, 7000)
+        }, 10000);
+
+    } catch (error: any) {
         console.log(error);
+        console.log("error msg", error.message);
+        console.log("error code", error.code)
+        clearTimeout(timeout);
+        clearInterval(timeInterval);
+        if (error.message) {
+            // Blockhash not found
+            if (error.message.indexOf("Blockhash not found") !== -1) {
+                warningAlertBottom("Blockhash not found. Please try again");
+            } else {
+                errorAlertBottom(error.message);
+            }
+        }
         closeLoading();
     }
 }
@@ -632,7 +906,11 @@ export const getMetadataAddr = async (mint: PublicKey): Promise<PublicKey> => {
 const createRaffleTx = async (
     program: anchor.Program,
     userAddress: PublicKey,
-    nft_mint: PublicKey,
+    nft: {
+        mint: string,
+        collectionName: string,
+        collectionId: string
+    },
     ticketPriceSol: number,
     endTimestamp: number,
     max: number,
@@ -651,13 +929,13 @@ const createRaffleTx = async (
         program.programId,
     );
 
-    let ownerNftAccount = await getAssociatedTokenAccount(userAddress, nft_mint);
+    let ownerNftAccount = await getAssociatedTokenAccount(userAddress, new PublicKey(nft.mint));
 
     let ix0 = await getATokenAccountsNeedCreate(
         solConnection,
         userAddress,
         globalAuthority,
-        [nft_mint]
+        [new PublicKey(nft.mint)]
     );
     console.log("Dest NFT Account = ", ix0.destinationAccounts[0].toBase58());
 
@@ -667,7 +945,7 @@ const createRaffleTx = async (
     for (i = 10; i > 0; i--) {
         raffle = await PublicKey.createWithSeed(
             userAddress,
-            nft_mint.toBase58().slice(0, i),
+            new PublicKey(nft.mint).toBase58().slice(0, i),
             program.programId,
         );
         let state = await getStateByKey(raffle);
@@ -682,14 +960,14 @@ const createRaffleTx = async (
     let ix = SystemProgram.createAccountWithSeed({
         fromPubkey: userAddress,
         basePubkey: userAddress,
-        seed: nft_mint.toBase58().slice(0, i),
+        seed: new PublicKey(nft.mint).toBase58().slice(0, i),
         newAccountPubkey: raffle,
         lamports: await solConnection.getMinimumBalanceForRentExemption(RAFFLE_SIZE),
         space: RAFFLE_SIZE,
         programId: program.programId,
     });
 
-    const metadataAddr = await getMetadataAddr(nft_mint);
+    const metadataAddr = await getMetadataAddr(new PublicKey(nft.mint));
     let tx = new Transaction();
     tx.add(ix);
     if (ix0.instructions.length !== 0) tx.add(...ix0.instructions);
@@ -706,7 +984,7 @@ const createRaffleTx = async (
                 collection,
                 ownerTempNftAccount: ownerNftAccount,
                 destNftTokenAccount: ix0.destinationAccounts[0],
-                nftMintAddress: nft_mint,
+                nftMintAddress: new PublicKey(nft.mint),
                 mintMetadata: metadataAddr,
                 tokenProgram: TOKEN_PROGRAM_ID,
                 tokenMetadataProgram: METAPLEX
@@ -715,31 +993,33 @@ const createRaffleTx = async (
             signers: [],
         }
     ))
-
-    await addDoc(rafflesInstance, {
-        raffleKey: raffle.toBase58(),
-        creator: userAddress.toBase58(),
-        nftMint: nft_mint.toBase58(),
-        count: 0,
-        noRepeat: 0,
-        maxEntrants: max,
-        startTimestamp: new Date().getTime(),
-        endTimestamp: endTimestamp,
-        ticketPriceSol: ticketPriceSol,
-        claimed: false,
-        winnerIndex: "",
-        winner: "",
-        entrants: 0,
-        twitter: twitter,
-        createTimeStamp: new Date().getTime(),
-        updateTimeStamp: new Date().getTime(),
-        status: 0
-    })
-        .then(() => {
-            console.log("added to firestore")
-        })
-        .catch((error: any) => {
-            console.log(error)
-        })
-    return tx;
+    console.log(nft, "====> NFT DETAIL");
+    // await addDoc(rafflesInstance, {
+    //   raffleKey: raffle.toBase58(),
+    //   creator: userAddress.toBase58(),
+    //   nftMint: nft.mint,
+    //   collectionName: nft.collectionName,
+    //   collectionId: nft.collectionId,
+    //   count: 0,
+    //   noRepeat: 0,
+    //   maxEntrants: max,
+    //   startTimestamp: new Date().getTime(),
+    //   endTimestamp: endTimestamp,
+    //   ticketPriceSol: ticketPriceSol,
+    //   claimed: false,
+    //   winnerIndex: "",
+    //   winner: "",
+    //   entrants: 0,
+    //   twitter: twitter,
+    //   createTimeStamp: new Date().getTime(),
+    //   updateTimeStamp: new Date().getTime(),
+    //   status: 0
+    // })
+    //   .then(() => {
+    //     console.log("added to firestore")
+    //   })
+    //   .catch((error: any) => {
+    //     console.log(error)
+    //   })
+    return { tx: tx, raffleKey: raffle };
 }

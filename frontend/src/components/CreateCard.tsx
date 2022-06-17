@@ -8,7 +8,9 @@ export default function CreateCard(props: {
     image: string,
     name: string,
     mint: string,
-    handleSelect: Function
+    handleSelect: Function,
+    collectionName: string,
+    collectionId: string
 }) {
     const cardRef = useRef<HTMLDivElement>(null);
     const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
@@ -27,7 +29,9 @@ export default function CreateCard(props: {
         setSelected(!selected);
         props.handleSelect({
             mint: props.mint,
-            selected: !selected
+            selected: !selected,
+            collectionName: props.collectionName,
+            collectionId: props.collectionId,
         })
     }
     return (

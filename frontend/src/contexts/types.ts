@@ -31,6 +31,8 @@ export interface RaffleDetailType {
     raffleKey: string,
     image: string,
     name: string,
+    collectionName: string,
+    collectionId: string,
     maxEntrants: number,
     endTimestamp: number,
     ticketPriceSol: number,
@@ -38,5 +40,6 @@ export interface RaffleDetailType {
     count: number,
     creator: string,
     twitter: string,
-    raffleId: string
+    raffleId: string,
+    raffleStatus: number
 }

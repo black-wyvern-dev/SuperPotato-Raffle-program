@@ -7,7 +7,6 @@ export default function CustomDatePicker(props: {
 }) {
     const [selectedDay, setSelectedDay] = useState<DateType>();
     const handleDate = (e: any) => {
-        console.log(e)
         setSelectedDay({
             day: e.day,
             month: e.month,

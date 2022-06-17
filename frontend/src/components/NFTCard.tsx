@@ -1,11 +1,10 @@
-import { Skeleton } from "@mui/material";
 import { WalletContextState } from "@solana/wallet-adapter-react";
 import { LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import moment from "moment";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { claimReward, getStateByKey } from "../contexts/transaction";
 import { getNftMetaData } from "../contexts/utils";
-import CopyAddress from "./CopyAddress";
+import CardActionButton from "./CardActionButton";
 import EndTimeCountdown from "./EndTimeCountdown";
 import NFTCardSkeleton from "./NFTCardSkeleton";
 import { SolanaIcon, VerifiedIcon } from "./svgIcons";
@@ -25,7 +24,11 @@ export default function NFTCard(props: {
     closeLoading: Function,
     updatePage: Function,
     keyword: string,
-    headTab: string
+    headTab: string,
+    collectionName: string,
+    collectionId: string,
+    raffleStatus: number,
+    pageLoading: boolean
 }) {
     const [isLoading, setIsLoading] = useState(false);
     const [image, setImage] = useState("");
@@ -37,26 +40,6 @@ export default function NFTCard(props: {
     const [count, setCount] = useState(0);
     const [creator, setCreator] = useState("");
     const [claimed, setClaimed] = useState(0);
-
-    const onClaimNft = async () => {
-        if (props.wallet.publicKey !== null) {
-            try {
-                await claimReward(
-                    props.wallet,
-                    new PublicKey(props.mint),
-                    new PublicKey(props.raffleKey),
-                    () => props.startLoading(),
-                    () => props.closeLoading(),
-                    () => props.updatePage(),
-                    props.raffleId
-                )
-            } catch (error) {
-                console.log(error);
-            }
-        } else {
-            errorAlert("Pleace connect wallet!")
-        }
-    }
 
     const getNFTdetail = async () => {
         setIsLoading(true);
@@ -97,7 +80,10 @@ export default function NFTCard(props: {
             raffleId: props.raffleId,
             count: count,
             creator: creator,
-            twitter: props.twitter
+            twitter: props.twitter,
+            collectionName: props.collectionName,
+            collectionId: props.collectionId,
+            raffleStatus: props.raffleStatus
         })
         props.showDetail();
     }
@@ -134,50 +120,19 @@ export default function NFTCard(props: {
                                 alt=""
                                 style={{ height: dimensions.width }}
                             />
-
-                            {new Date() < new Date(endTimestamp * 1000) ?
-                                <button className="btn-round btn-dark" onClick={() => enterDetail()}>
-                                    Enter Raffle
-                                </button>
-                                :
-                                count !== 0 ?
-                                    (
-                                        (claimed === 2) ?
-                                            (
-                                                props.wallet.publicKey?.toBase58() === winner ?
-                                                    <button className="btn-round btn-blue" onClick={() => onClaimNft()}>
-                                                        Claim NFT
-                                                    </button>
-                                                    :
-                                                    <div className="btn-round button-winner" >
-                                                        <label>Winner</label>
-                                                        <CopyAddress address={winner} length={3} />
-                                                    </div>
-                                            )
-                                            :
-                                            (
-                                                (claimed === 1 && props.wallet.publicKey?.toBase58() === winner) ?
-                                                    <button className="btn-round btn-blue" disabled>
-                                                        Claimed
-                                                    </button>
-                                                    :
-                                                    <button className="btn-round btn-dark" onClick={() => enterDetail()}>
-                                                        Enter Raffle
-                                                    </button>
-                                            )
-                                    )
-                                    :
-                                    <button className="btn-round btn-dark" onClick={() => enterDetail()}>
-                                        Enter Raffle
-                                    </button>
-                            }
+                            <CardActionButton
+                                claimed={claimed}
+                                onCallback={() => enterDetail()}
+                                winner={winner}
+                                endTime={endTimestamp}
+                            />
                         </div>
                         <div className="card-content">
                             <p className="collection">
-                                Collection <span><VerifiedIcon /></span>
+                                {props.collectionName} <span><VerifiedIcon /></span>
                             </p>
                             <p className="nft-name">
-                                {name}
+                                {name.length < 24 ? name : name.slice(0, 24) + "..."}
                             </p>
                             <div className="entries-price">
                                 {new Date() > new Date(endTimestamp * 1000) ?
@@ -205,43 +160,12 @@ export default function NFTCard(props: {
                                 </div>
                             </div>
                             <div className="card-bottom">
-
-                                {new Date() < new Date(endTimestamp * 1000) ?
-                                    <button className="btn-round btn-dark" onClick={() => enterDetail()}>
-                                        Enter Raffle
-                                    </button>
-                                    :
-                                    count !== 0 ?
-                                        (
-                                            (claimed === 2) ?
-                                                (
-                                                    props.wallet.publicKey?.toBase58() === winner ?
-                                                        <button className="btn-round btn-blue" onClick={() => onClaimNft()}>
-                                                            Claim NFT
-                                                        </button>
-                                                        :
-                                                        <div className="btn-round button-winner" >
-                                                            <label>Winner</label>
-                                                            <CopyAddress address={winner} length={3} />
-                                                        </div>
-                                                )
-                                                :
-                                                (
-                                                    (claimed === 1 && props.wallet.publicKey?.toBase58() === winner) ?
-                                                        <button className="btn-round btn-blue" disabled>
-                                                            Claimed
-                                                        </button>
-                                                        :
-                                                        <button className="btn-round btn-dark" onClick={() => enterDetail()}>
-                                                            Enter Raffle
-                                                        </button>
-                                                )
-                                        )
-                                        :
-                                        <button className="btn-round btn-dark" onClick={() => enterDetail()}>
-                                            Enter Raffle
-                                        </button>
-                                }
+                                <CardActionButton
+                                    claimed={claimed}
+                                    onCallback={() => enterDetail()}
+                                    winner={winner}
+                                    endTime={endTimestamp}
+                                />
                                 <div className="end-time">
                                     <label>
                                         {new Date() > new Date(endTimestamp * 1000) ?

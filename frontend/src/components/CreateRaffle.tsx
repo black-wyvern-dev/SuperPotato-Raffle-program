@@ -2,9 +2,10 @@ import { FormControl, FormControlLabel, Radio, RadioGroup } from "@mui/material"
 import { getParsedNftAccountsByOwner } from "@nfteyez/sol-rayz";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { PublicKey } from "@solana/web3.js";
-import { addDoc, getDocs } from "firebase/firestore";
+import { addDoc, collection, getDocs, onSnapshot, query } from "firebase/firestore";
 import { useEffect, useState } from "react";
-import { collectionsInstance, rafflesInstance } from "../api/firebase";
+import { HashLoader } from "react-spinners";
+import { collectionsInstance, db, rafflesInstance } from "../api/firebase";
 import { createRaffle } from "../contexts/transaction";
 import { getNftMetaData, solConnection } from "../contexts/utils";
 import CreateCard from "./CreateCard";
@@ -21,7 +22,8 @@ export default function CreateRaffle(props: {
     closeRegister: Function,
     startLoading: Function,
     closeLoading: Function,
-    getAllData: Function
+    getAllData: Function,
+    pageLoading: boolean
 }) {
     const wallet = useWallet();
     const { startLoading, closeLoading } = props;
@@ -39,6 +41,8 @@ export default function CreateRaffle(props: {
         if (wallet.publicKey) {
             setIsLoading(true);
             let restered: any = [];
+            let collectionNames: any = [];
+            let collectionIds: any = [];
             let filterdNfts = [];
             await getDocs(collectionsInstance)
                 .then(async (data) => {
@@ -46,12 +50,16 @@ export default function CreateRaffle(props: {
                         return ({ ...item.data(), id: item.id })
                     }));
                     for (let collection of collections) {
-                        if (collection.accepted)
-                            restered.push(collection.collectionId)
+                        if (collection.accepted) {
+                            restered.push(collection.collectionId);
+                            collectionNames.push(collection.collectionName);
+                            collectionIds.push(collection.collectionId);
+                        }
                     }
                 }).catch((error) => {
                     console.log(error)
                 })
+
             const nftList = await getParsedNftAccountsByOwner({ publicAddress: wallet.publicKey.toBase58(), connection: solConnection });
             if (nftList.length !== 0) {
                 let uriPromise: any = []
@@ -75,40 +83,63 @@ export default function CreateRaffle(props: {
                     mataPrimise.push(metadata);
                 }
                 const metaList = await Promise.all(mataPrimise);
+                console.log(metaList, "nftList")
                 for (let i = 0; i < metaList.length; i++) {
                     if (metaList[i]) {
-                        if (restered.indexOf(metaList[i].properties.creators[0].address) !== -1) {
+                        if (restered.indexOf(nftList[i].data.creators[0].address) !== -1) {
                             filterdNfts.push({
                                 description: metaList[i].description,
                                 external_url: metaList[i].external_url,
                                 image: metaList[i].image,
                                 name: metaList[i].name,
-                                mint: nftList[i].mint
+                                mint: nftList[i].mint,
+                                collectionName: collectionNames[collectionIds.indexOf(nftList[i].data.creators[0].address)],
+                                collectionId: collectionIds[collectionIds.indexOf(nftList[i].data.creators[0].address)]
                             })
                         }
                     }
                 }
-                console.log(filterdNfts, "urilist vurilist");
             }
             setNfts(filterdNfts)
             setIsLoading(false);
         }
     }
-    const [selectedNfts, setSelectedNfts] = useState<any>([]);
-    const handleSelect = (nft: { mint: string, selected: boolean }) => {
-        let selected = selectedNfts;
-        if (selected && selected.length !== 0) {
-            const index = selected.indexOf(nft.mint);
+    const [selectedNfts, setSelectedNfts] = useState<{
+        mint: string,
+        collectionName: string,
+        collectionId: string
+    }[]>([]);
+
+    const handleSelect = (nft: { mint: string, selected: boolean, collectionName: string, collectionId: string }) => {
+        let nftselected = selectedNfts;
+        if (nftselected && nftselected.length !== 0) {
+            let index = -1;
+            for (let i = 0; i < nftselected.length; i++) {
+                if (nftselected[i].mint === nft.mint) {
+                    index = i;
+                }
+            }
+
             if (index !== -1) {
-                selected.splice(index, 1);
+                nftselected.splice(index, 1);
             } else {
-                selected.push(nft.mint)
+                nftselected.push({
+                    mint: nft.mint,
+                    collectionName: nft.collectionName,
+                    collectionId: nft.collectionId
+                });
             }
         } else {
-            selected.push(nft.mint)
+            nftselected.push({
+                mint: nft.mint,
+                collectionName: nft.collectionName,
+                collectionId: nft.collectionId
+            }
+            );
         }
-        setSelectedNfts(selected);
-        console.log(selected);
+        console.log(nftselected, "====> seleele")
+        nftselected.sort((a: any, b: any) => b.name - a.name);
+        setSelectedNfts(nftselected);
     }
 
     const handleTerm = (e: any) => {
@@ -117,6 +148,7 @@ export default function CreateRaffle(props: {
 
     const updatePage = () => {
         setSelectedNfts([]);
+        getWalletNFts();
         props.closeCreate();
         props.getAllData();
 
@@ -142,15 +174,24 @@ export default function CreateRaffle(props: {
     }
 
     useEffect(() => {
-        const able = date && time && ticketPrice && ticketPrice !== 0 && ticketSupply && ticketSupply !== 0 && termAccepted && selectedNfts && selectedNfts.length !== 0;
-        setCreateAble(able ? able : false);
+        if (date && time && ticketPrice && ticketPrice !== 0 && ticketSupply && ticketSupply !== 0 && termAccepted && selectedNfts && selectedNfts.length !== 0) {
+            setCreateAble(true);
+        } else {
+            setCreateAble(false);
+        }
     }, [date, time, ticketSupply, ticketPrice, termAccepted, selectedNfts]);
 
     useEffect(() => {
-        if (wallet.publicKey)
-            getWalletNFts();
+        if (wallet.publicKey) {
+            const collectionRefRaffles = collection(db, "raffles");
+            const qRaffles = query(collectionRefRaffles);
+            onSnapshot(qRaffles, () => {
+                getWalletNFts();
+            });
+        }
         // eslint-disable-next-line
-    }, [wallet.connected]);
+    }, [wallet.connected])
+
     return (
         <div
             className="create-raffle-component"
@@ -160,7 +201,7 @@ export default function CreateRaffle(props: {
                 height: props.showCreated ? "100vh" : 0,
                 overflowY: props.showCreated ? "auto" : "hidden"
             }}>
-            <div className="container">
+            <div className="page-container">
                 <div className="create-raffle-component-main">
                     <div className="create-header">
                         <button className="icon-button" onClick={() => props.closeCreate()}>
@@ -218,15 +259,19 @@ export default function CreateRaffle(props: {
                             </div> */}
                             <FormControl>
                                 <RadioGroup onChange={handleTerm}>
-                                    <FormControlLabel value={termAccepted} control={<Radio />} label="I accept the terms &#38; conditions below." />
+                                    <FormControlLabel value={termAccepted} control={<Radio checked={termAccepted} />} label="I accept the terms &#38; conditions below." />
                                 </RadioGroup>
                             </FormControl>
                             <button
-                                className="btn-big"
+                                className={`btn-big ${props.pageLoading && "display-center"}`}
                                 onClick={() => handleCreate()}
-                                disabled={!createAble}
+                                disabled={!createAble || props.pageLoading}
                             >
-                                create raffle
+                                {!props.pageLoading ?
+                                    <span>create raffle</span>
+                                    :
+                                    <><HashLoader color={"#000"} size={18} /><span style={{ marginLeft: 5, color: "#000" }}>creating...</span></>
+                                }
                             </button>
                             <div className="create-terms">
                                 <h5>Terms &#38; Conditions</h5>
@@ -273,7 +318,9 @@ export default function CreateRaffle(props: {
                                                 image={item.image}
                                                 name={item.name}
                                                 mint={item.mint}
-                                                handleSelect={handleSelect}
+                                                handleSelect={(e: any) => handleSelect(e)}
+                                                collectionName={item.collectionName}
+                                                collectionId={item.collectionId}
                                             />
                                         ))}
                                     </>
