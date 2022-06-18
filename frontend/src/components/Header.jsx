@@ -1,5 +1,5 @@
-import { ClickAwayListener } from "@mui/material";
 import { useState } from "react";
+import { ClickAwayListener } from "@mui/material";
 import Dropdown from 'react-dropdown';
 import 'react-dropdown/style.css';
 import { CloseCircleIcon, DownIcon, FiltersIcon, SearchIcon } from "./svgIcons";

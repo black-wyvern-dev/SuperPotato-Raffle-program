@@ -1,14 +1,13 @@
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { WalletContextState } from "@solana/wallet-adapter-react";
 import { LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import moment from "moment";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { claimReward, getStateByKey } from "../contexts/transaction";
+import { getStateByKey } from "../contexts/transaction";
 import { getNftMetaData } from "../contexts/utils";
 import CardActionButton from "./CardActionButton";
 import EndTimeCountdown from "./EndTimeCountdown";
 import NFTCardSkeleton from "./NFTCardSkeleton";
 import { SolanaIcon, VerifiedIcon } from "./svgIcons";
-import { errorAlert } from "./toastGroup";
 
 export default function NFTCard(props: {
     mint: string,

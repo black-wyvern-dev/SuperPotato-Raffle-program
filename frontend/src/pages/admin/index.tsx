@@ -1,6 +1,6 @@
-import { useWallet } from "@solana/wallet-adapter-react";
-import { useRouter } from "next/router"
 import { useEffect } from "react"
+import { useRouter } from "next/router"
+import { useWallet } from "@solana/wallet-adapter-react";
 import { ADMINS } from "../../config";
 
 export default function AdminPage() {

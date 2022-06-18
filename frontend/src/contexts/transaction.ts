@@ -12,8 +12,8 @@ import { WalletContextState } from '@solana/wallet-adapter-react';
 import { solConnection } from './utils';
 import { IDL } from './raffle';
 import { errorAlert, errorAlertBottom, infoAlert, infoAlertBottom, successAlert, successAlertBottom, warningAlert, warningAlertBottom } from '../components/toastGroup';
-import { addDoc, collection, doc, getDoc, getDocs, query, updateDoc, where } from 'firebase/firestore';
-import { database, db, rafflesInstance } from '../api/firebase';
+import { addDoc, doc, updateDoc } from 'firebase/firestore';
+import { database, rafflesInstance } from '../api/firebase';
 
 export const addCollection = async (
     wallet: WalletContextState,
@@ -71,8 +71,6 @@ export const addCollection = async (
                 console.log("database added...")
             })
 
-        console.log(`https://public-api.solscan.io/transaction/${txId}`);
-
         timeout = setTimeout(() => {
             // infoAlertBottom("Checking status...");
             timeInterval = setInterval(async () => {
@@ -81,7 +79,6 @@ export const addCollection = async (
                     .then(resp =>
                         resp.json()
                     ).then(async (json) => {
-                        console.log(json, "===> json");
                         if (json.status === "Success" && json.signer.length !== 0) {
                             await updateDoc(collectionById, {
                                 status: 0,
@@ -94,6 +91,11 @@ export const addCollection = async (
                                     successAlert("Transaction is confirmed..");
                                 })
                         }
+                        if (json.status === "Fail") {
+                            clearTimeout(timeout);
+                            clearInterval(timeInterval);
+                            errorAlert("Transaction is failed..");
+                        }
                     })
                     .catch((error) => {
                         console.log(error);
@@ -101,16 +103,7 @@ export const addCollection = async (
             }, 8000)
         }, 10000);
 
-        // await solConnection.confirmTransaction(txId, "finalized");
-        // clearTimeout(timeout);
-        // clearInterval(timeInterval);
-
-        console.log("txHash =", tx);
-
     } catch (error: any) {
-        console.log("error msg", error.message);
-        console.log("error code", error.code)
-
         clearTimeout(timeout);
         clearInterval(timeInterval);
         await updateDoc(collectionById, {
@@ -169,15 +162,13 @@ export const createRaffle = async (
         }
 
         let { blockhash } = await provider.connection.getRecentBlockhash("confirmed");
-        console.log(blockhash, "===> blockhash create tickets")
         transactions.forEach((transaction) => {
             transaction.feePayer = (wallet.publicKey as PublicKey);
             transaction.recentBlockhash = blockhash;
         });
-        console.log(transactions, "===+++++++++++++===> transactions")
+
         if (wallet.signAllTransactions !== undefined) {
             const signedTransactions = await wallet.signAllTransactions(transactions);
-            console.log(signedTransactions, "===+++++++++++++===> txs")
 
             let signatures = await Promise.all(
                 signedTransactions.map((transaction) =>
@@ -239,6 +230,12 @@ export const createRaffle = async (
                                         })
                                 }
 
+                                if (json.status === "Fail") {
+                                    clearTimeout(timeout);
+                                    clearInterval(timeInterval);
+                                    errorAlert("Transaction is failed..");
+                                }
+
                             })
                             .catch((error) => {
                                 console.log(error);
@@ -248,18 +245,9 @@ export const createRaffle = async (
                 }, 7000)
             }, 15000);
 
-
-            // await Promise.all(
-            //     signatures.map((signature) =>
-            //         provider.connection.confirmTransaction(signature, "confirmed")
-            //     )
-            // );
         }
 
     } catch (error: any) {
-        console.log(error);
-        console.log("error msg", error.message);
-        console.log("error code", error.code)
         clearTimeout(timeout);
         clearInterval(timeInterval);
         if (error.message) {
@@ -330,7 +318,6 @@ export const buyTicket = async (
                     .then(resp =>
                         resp.json()
                     ).then(async (json) => {
-                        console.log(json, "===> json");
                         if (json.status === "Success" && json.signer.length !== 0) {
                             await updateDoc(collectionById, {
                                 tx: txId,
@@ -344,6 +331,12 @@ export const buyTicket = async (
                                     clearInterval(timeInterval);
                                 })
                         }
+
+                        if (json.status === "Fail") {
+                            clearTimeout(timeout);
+                            clearInterval(timeInterval);
+                            errorAlert("Transaction is failed..");
+                        }
                     })
                     .catch((error) => {
                         console.log(error);
@@ -351,9 +344,6 @@ export const buyTicket = async (
             }, 7000)
         }, 10000);
     } catch (error: any) {
-        console.log(error);
-        console.log("error msg", error.message);
-        console.log("error code", error.code)
         clearTimeout(timeout);
         clearInterval(timeInterval);
         if (error.message) {
@@ -410,7 +400,6 @@ export const revealWinner = async (
                     .then(resp =>
                         resp.json()
                     ).then(async (json) => {
-                        console.log(json, "===> json");
                         if (json.status === "Success" && json.signer.length !== 0) {
                             await updateDoc(collectionById, {
                                 tx: txId,
@@ -424,6 +413,12 @@ export const revealWinner = async (
                                     updatePage();
                                 })
                         }
+
+                        if (json.status === "Fail") {
+                            clearTimeout(timeout);
+                            clearInterval(timeInterval);
+                            errorAlert("Transaction is failed..");
+                        }
                     })
                     .catch((error) => {
                         console.log(error);
@@ -432,9 +427,6 @@ export const revealWinner = async (
         }, 10000);
 
     } catch (error: any) {
-        console.log(error);
-        console.log("error msg", error.message);
-        console.log("error code", error.code)
         clearTimeout(timeout);
         clearInterval(timeInterval);
         if (error.message) {
@@ -481,7 +473,6 @@ export const claimReward = async (
             userAddress,
             [nft_mint]
         );
-        console.log("Claimer's NFT Account: ", ix0.destinationAccounts[0]);
         let tx = new Transaction();
         if (ix0.instructions.length !== 0) tx.add(...ix0.instructions);
         tx.add(program.instruction.claimReward(
@@ -526,6 +517,12 @@ export const claimReward = async (
                                     clearInterval(timeInterval);
                                 })
                         }
+
+                        if (json.status === "Fail") {
+                            clearTimeout(timeout);
+                            clearInterval(timeInterval);
+                            errorAlert("Transaction is failed..");
+                        }
                     })
                     .catch((error) => {
                         console.log(error);
@@ -534,9 +531,6 @@ export const claimReward = async (
         }, 10000);
 
     } catch (error: any) {
-        console.log(error);
-        console.log("error msg", error.message);
-        console.log("error code", error.code)
         clearTimeout(timeout);
         clearInterval(timeInterval);
         if (error.message) {
@@ -584,8 +578,6 @@ export const withdrawNft = async (
             userAddress,
             [nft_mint]
         );
-        console.log("Creator's NFT Account: ", ix0.destinationAccounts[0].toBase58());
-        console.log(raffleKey.toBase58());
         let tx = new Transaction();
         if (ix0.instructions.length !== 0) tx.add(...ix0.instructions);
         tx.add(program.instruction.withdrawNft(
@@ -615,7 +607,6 @@ export const withdrawNft = async (
                     .then(resp =>
                         resp.json()
                     ).then(async (json) => {
-                        console.log(json, "===> json");
                         if (json.status === "Success" && json.signer.length !== 0) {
                             await updateDoc(collectionById, {
                                 tx: txId,
@@ -629,6 +620,12 @@ export const withdrawNft = async (
                                     clearInterval(timeInterval);
                                 })
                         }
+
+                        if (json.status === "Fail") {
+                            clearTimeout(timeout);
+                            clearInterval(timeInterval);
+                            errorAlert("Transaction is failed..");
+                        }
                     })
                     .catch((error) => {
                         console.log(error);
@@ -637,9 +634,6 @@ export const withdrawNft = async (
         }, 10000);
 
     } catch (error: any) {
-        console.log(error);
-        console.log("error msg", error.message);
-        console.log("error code", error.code)
         clearTimeout(timeout);
         clearInterval(timeInterval);
         if (error.message) {
@@ -937,7 +931,6 @@ const createRaffleTx = async (
         globalAuthority,
         [new PublicKey(nft.mint)]
     );
-    console.log("Dest NFT Account = ", ix0.destinationAccounts[0].toBase58());
 
     let raffle;
     let i;
@@ -950,12 +943,10 @@ const createRaffleTx = async (
         );
         let state = await getStateByKey(raffle);
         if (state === null) {
-            console.log(i);
             break;
         }
     }
     if (!raffle) return;
-    console.log(i);
 
     let ix = SystemProgram.createAccountWithSeed({
         fromPubkey: userAddress,
@@ -993,33 +984,5 @@ const createRaffleTx = async (
             signers: [],
         }
     ))
-    console.log(nft, "====> NFT DETAIL");
-    // await addDoc(rafflesInstance, {
-    //   raffleKey: raffle.toBase58(),
-    //   creator: userAddress.toBase58(),
-    //   nftMint: nft.mint,
-    //   collectionName: nft.collectionName,
-    //   collectionId: nft.collectionId,
-    //   count: 0,
-    //   noRepeat: 0,
-    //   maxEntrants: max,
-    //   startTimestamp: new Date().getTime(),
-    //   endTimestamp: endTimestamp,
-    //   ticketPriceSol: ticketPriceSol,
-    //   claimed: false,
-    //   winnerIndex: "",
-    //   winner: "",
-    //   entrants: 0,
-    //   twitter: twitter,
-    //   createTimeStamp: new Date().getTime(),
-    //   updateTimeStamp: new Date().getTime(),
-    //   status: 0
-    // })
-    //   .then(() => {
-    //     console.log("added to firestore")
-    //   })
-    //   .catch((error: any) => {
-    //     console.log(error)
-    //   })
     return { tx: tx, raffleKey: raffle };
 }

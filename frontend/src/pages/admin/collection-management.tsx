@@ -1,8 +1,7 @@
-import { useWallet, Wallet, WalletContextState } from "@solana/wallet-adapter-react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/router";
+import { useWallet, WalletContextState } from "@solana/wallet-adapter-react";
 import { WalletModalProvider, WalletMultiButton } from "@solana/wallet-adapter-react-ui";
-import Link from "next/link";
-import { useRouter } from "next/router"
-import { useEffect, useState } from "react"
 import CopyAddress from "../../components/CopyAddress";
 import { ADMINS } from "../../config";
 import { Dialog } from "@mui/material";
@@ -244,7 +243,6 @@ const ApproveDialog = (props: {
                 }
             }
             if (!able) {
-                console.log(props.id)
                 await addCollection(props.wallet, new PublicKey(props.collectionId), props.id);
             } else {
                 props.saveDataBase();

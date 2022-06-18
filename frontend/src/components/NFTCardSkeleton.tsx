@@ -1,5 +1,5 @@
-import { Skeleton } from "@mui/material";
 import { useLayoutEffect, useRef, useState } from "react";
+import { Skeleton } from "@mui/material";
 
 export default function NFTCardSkeleton() {
     const cardRef = useRef<HTMLDivElement>(null);

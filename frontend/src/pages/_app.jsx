@@ -1,7 +1,6 @@
 import '../styles/style.scss'
 import Wallet from '../components/wallet/Wallet'
 import { ToastContainer } from 'react-toastify'
-import PageLoading from '../components/PageLoading'
 import { useState } from 'react'
 
 function RaffleApp({ Component, pageProps }) {
@@ -18,7 +17,6 @@ function RaffleApp({ Component, pageProps }) {
         style={{ fontSize: 15 }}
         pauseOnFocusLoss={false}
       />
-      {/* <PageLoading loading={loading} /> */}
     </Wallet>
   )
 }

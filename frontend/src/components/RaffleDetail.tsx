@@ -90,7 +90,6 @@ export default function RaffleDetail(props: {
             })
         const raffleData = await getStateByKey(new PublicKey(raffleDetail.raffleKey))
         if (!raffleData) return;
-        console.log(raffleData, "===>raffle data")
         let entrants = [];
         let buyerList: any = [];
         if (raffleData.count.toNumber() !== 0) {

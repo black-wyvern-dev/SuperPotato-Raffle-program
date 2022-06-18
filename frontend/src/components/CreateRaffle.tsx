@@ -1,11 +1,11 @@
-import { FormControl, FormControlLabel, Radio, RadioGroup } from "@mui/material";
-import { getParsedNftAccountsByOwner } from "@nfteyez/sol-rayz";
+import { useEffect, useState } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { PublicKey } from "@solana/web3.js";
-import { addDoc, collection, getDocs, onSnapshot, query } from "firebase/firestore";
-import { useEffect, useState } from "react";
+import { FormControl, FormControlLabel, Radio, RadioGroup } from "@mui/material";
+import { getParsedNftAccountsByOwner } from "@nfteyez/sol-rayz";
+import { collection, getDocs, onSnapshot, query } from "firebase/firestore";
 import { HashLoader } from "react-spinners";
-import { collectionsInstance, db, rafflesInstance } from "../api/firebase";
+import { collectionsInstance, db } from "../api/firebase";
 import { createRaffle } from "../contexts/transaction";
 import { getNftMetaData, solConnection } from "../contexts/utils";
 import CreateCard from "./CreateCard";
@@ -83,7 +83,6 @@ export default function CreateRaffle(props: {
                     mataPrimise.push(metadata);
                 }
                 const metaList = await Promise.all(mataPrimise);
-                console.log(metaList, "nftList")
                 for (let i = 0; i < metaList.length; i++) {
                     if (metaList[i]) {
                         if (restered.indexOf(nftList[i].data.creators[0].address) !== -1) {
@@ -137,7 +136,6 @@ export default function CreateRaffle(props: {
             }
             );
         }
-        console.log(nftselected, "====> seleele")
         nftselected.sort((a: any, b: any) => b.name - a.name);
         setSelectedNfts(nftselected);
     }

@@ -1,9 +1,9 @@
+import { useEffect, useState } from "react";
+import { NextSeo } from "next-seo";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { collection, getDocs, onSnapshot, query, where } from "firebase/firestore";
-import { NextSeo } from "next-seo";
-import { useCallback, useEffect, useState } from "react";
-import { db, rafflesInstance } from "../api/firebase";
+import { db } from "../api/firebase";
 import CollectionRegister from "../components/CollectionRegister";
 import CreateRaffle from "../components/CreateRaffle";
 import Footer from "../components/Footer";
@@ -12,7 +12,6 @@ import MyRaffleList from "../components/MyRaffleList";
 import NFTCard from "../components/NFTCard";
 import NFTCardSkeleton from "../components/NFTCardSkeleton";
 import RaffleDetail from "../components/RaffleDetail";
-import { successAlertBottom } from "../components/toastGroup";
 import { LIVE_URL } from "../config";
 import { getGlobalAllData } from "../contexts/transaction";
 import { RaffleDetailType } from "../contexts/types";
@@ -117,7 +116,6 @@ export default function HomePage(props: {
     setIsLoading(true);
     const now = new Date().getTime();
     const data = await getGlobalAllData();
-    console.log(data, "===> global data")
     const filterData: any = [];
     if (data && data?.length !== 0) {
       for (let item of data) {
@@ -170,7 +168,6 @@ export default function HomePage(props: {
       } else if (sort === "price-h-l") {
         filterData.sort((a: any, b: any) => b.ticketPriceSol - a.ticketPriceSol);
       }
-      console.log(filterData, "==> filterData")
 
       setRaffles(filterData);
     }

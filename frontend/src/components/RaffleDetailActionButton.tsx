@@ -1,7 +1,5 @@
-import { collection, collectionGroup, doc, getDoc, getDocs, onSnapshot, query, where } from "firebase/firestore";
 import { useEffect, useState } from "react"
 import { HashLoader } from "react-spinners";
-import { database, db } from "../api/firebase";
 import { EMPTY_ADDRESS } from "../config";
 
 export default function RaffleDetailActionButton(props: {
@@ -55,7 +53,6 @@ export default function RaffleDetailActionButton(props: {
 
             }
         }
-        console.log(raffleStatus, "===> raffles status changed")
     }, [claimed, winner, endTime, count, raffleStatus]);
 
     return (

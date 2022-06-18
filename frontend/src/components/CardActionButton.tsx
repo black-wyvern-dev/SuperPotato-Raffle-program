@@ -19,7 +19,6 @@ export default function CardActionButton(props: {
                 if (props.winner === EMPTY_ADDRESS) {
                     setStatus(2);
                 } else {
-                    // console.log(props.claimed, props.winner, props.endTime * 1000, "+++++++++++++++++++++")
                     setStatus(1);
                 }
             }

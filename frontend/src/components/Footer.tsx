@@ -1,6 +1,6 @@
+import { useState } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { WalletModalProvider, WalletMultiButton } from "@solana/wallet-adapter-react-ui";
-import { useState } from "react";
 import { AddIcon, BottomPatterLeft, BottomPatterRight, DocIcon, FooterLogo, FooterMenuCloseIcon, FooterMenuIcon, FooterMobileLogo, UserIcon } from "./svgIcons";
 
 export default function Footer(props: {
