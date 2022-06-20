@@ -213,7 +213,7 @@ button {
 
 .MuiSelect-select {
     color: #fff !important;
-    font-family: $font-second  !important;
+    font-family: $font-second !important;
 }
 
 .MuiSelect-icon {
@@ -221,7 +221,7 @@ button {
 }
 
 .MuiTouchRipple-root {
-    font-family: $font-second  !important;
+    font-family: $font-second !important;
 }
 
 .MuiRadio-root {
@@ -231,7 +231,7 @@ button {
 }
 
 .MuiTypography-root {
-    font-family: $font-main  !important;
+    font-family: $font-main !important;
 }
 
 .MuiFormGroup-root {
@@ -899,7 +899,7 @@ button {
                 a {
                     width: 40px;
                     height: 40px;
-                    background: $dark-color  !important;
+                    background: $dark-color !important;
                     display: flex;
                     align-items: center;
                     justify-content: center;
@@ -1312,7 +1312,7 @@ button {
                         top: 50%;
                         transform: translateY(-12px);
                         right: 10px;
-                        z-index: 100;
+                        z-index: 1;
                     }
                 }
             }
@@ -1863,18 +1863,19 @@ button.btn-register {
             }
 
             &:first-child {
-                button {}
+                button {
+                }
             }
 
             &:last-child {
-                button {}
+                button {
+                }
             }
         }
     }
 }
 
 .display-center {
-
     display: flex;
     justify-content: center;
     align-items: center;
@@ -2166,7 +2167,7 @@ button.btn-search {
 
         svg {
             path {
-                fill: $dark-color  !important;
+                fill: $dark-color !important;
             }
         }
     }
@@ -2189,7 +2190,6 @@ button.btn-search {
 }
 
 .detail-loading {
-
     height: 100%;
     width: 100%;
     display: flex;

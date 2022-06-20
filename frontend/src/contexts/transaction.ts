@@ -7,7 +7,7 @@ import {
 import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } from "@solana/spl-token";
 
 import { CollectionPool, GlobalPool, RafflePool } from './types';
-import { DECIMALS, GLOBAL_AUTHORITY_SEED, METAPLEX, PROGRAM_ID, RAFFLE_SIZE, TREASURY_WALLET } from '../config';
+import { DECIMALS, GLOBAL_AUTHORITY_SEED, METAPLEX, PROGRAM_ID, RAFFLE_SIZE, SOLSCAN_API, TREASURY_WALLET } from '../config';
 import { WalletContextState } from '@solana/wallet-adapter-react';
 import { solConnection } from './utils';
 import { IDL } from './raffle';
@@ -75,7 +75,7 @@ export const addCollection = async (
             // infoAlertBottom("Checking status...");
             timeInterval = setInterval(async () => {
                 infoAlertBottom("Checking status...");
-                await fetch(`https://public-api.solscan.io/transaction/${txId}`)
+                await fetch(`${SOLSCAN_API}${txId}`)
                     .then(resp =>
                         resp.json()
                     ).then(async (json) => {
@@ -185,9 +185,9 @@ export const createRaffle = async (
                 timeInterval = setInterval(async () => {
                     infoAlertBottom("Checking status...");
                     for (let i = 0; i < signatures.length; i++) {
-                        console.log(`https://public-api.solscan.io/transaction/${signatures[i]}`);
+                        console.log(`${SOLSCAN_API}${signatures[i]}`);
 
-                        await fetch(`https://public-api.solscan.io/transaction/${signatures[i]}`)
+                        await fetch(`${SOLSCAN_API}${signatures[i]}`)
                             .then(resp =>
                                 resp.json()
                             ).then(async (json) => {
@@ -233,6 +233,7 @@ export const createRaffle = async (
                                 if (json.status === "Fail") {
                                     clearTimeout(timeout);
                                     clearInterval(timeInterval);
+                                    closeLoading();
                                     errorAlert("Transaction is failed..");
                                 }
 
@@ -308,13 +309,13 @@ export const buyTicket = async (
             }
         ))
         const txId = await wallet.sendTransaction(tx, solConnection);
-        console.log(`https://public-api.solscan.io/transaction/${txId}`);
+        console.log(`${SOLSCAN_API}${txId}`);
 
         timeout = setTimeout(() => {
             // infoAlertBottom("Checking status...");
             timeInterval = setInterval(async () => {
                 infoAlertBottom("Checking status...");
-                await fetch(`https://public-api.solscan.io/transaction/${txId}`)
+                await fetch(`${SOLSCAN_API}${txId}`)
                     .then(resp =>
                         resp.json()
                     ).then(async (json) => {
@@ -335,6 +336,7 @@ export const buyTicket = async (
                         if (json.status === "Fail") {
                             clearTimeout(timeout);
                             clearInterval(timeInterval);
+                            closeLoading();
                             errorAlert("Transaction is failed..");
                         }
                     })
@@ -390,13 +392,13 @@ export const revealWinner = async (
             }
         ))
         const txId = await wallet.sendTransaction(tx, solConnection);
-        console.log(`https://public-api.solscan.io/transaction/${txId}`);
+        console.log(`${SOLSCAN_API}${txId}`);
 
         timeout = setTimeout(() => {
             // infoAlertBottom("Checking status...");
             timeInterval = setInterval(async () => {
                 infoAlertBottom("Checking status...");
-                await fetch(`https://public-api.solscan.io/transaction/${txId}`)
+                await fetch(`${SOLSCAN_API}${txId}`)
                     .then(resp =>
                         resp.json()
                     ).then(async (json) => {
@@ -417,6 +419,7 @@ export const revealWinner = async (
                         if (json.status === "Fail") {
                             clearTimeout(timeout);
                             clearInterval(timeInterval);
+                            closeLoading();
                             errorAlert("Transaction is failed..");
                         }
                     })
@@ -493,13 +496,13 @@ export const claimReward = async (
         ))
         const txId = await wallet.sendTransaction(tx, solConnection);
 
-        console.log(`https://public-api.solscan.io/transaction/${txId}`);
+        console.log(`${SOLSCAN_API}${txId}`);
 
         timeout = setTimeout(() => {
             // infoAlertBottom("Checking status...");
             timeInterval = setInterval(async () => {
                 infoAlertBottom("Checking status...");
-                await fetch(`https://public-api.solscan.io/transaction/${txId}`)
+                await fetch(`${SOLSCAN_API}${txId}`)
                     .then(resp =>
                         resp.json()
                     ).then(async (json) => {
@@ -521,6 +524,7 @@ export const claimReward = async (
                         if (json.status === "Fail") {
                             clearTimeout(timeout);
                             clearInterval(timeInterval);
+                            closeLoading();
                             errorAlert("Transaction is failed..");
                         }
                     })
@@ -597,13 +601,13 @@ export const withdrawNft = async (
         ))
         const txId = await wallet.sendTransaction(tx, solConnection);
 
-        console.log(`https://public-api.solscan.io/transaction/${txId}`);
+        console.log(`${SOLSCAN_API}${txId}`);
 
         timeout = setTimeout(() => {
             // infoAlertBottom("Checking status...");
             timeInterval = setInterval(async () => {
                 infoAlertBottom("Checking status...");
-                await fetch(`https://public-api.solscan.io/transaction/${txId}`)
+                await fetch(`${SOLSCAN_API}${txId}`)
                     .then(resp =>
                         resp.json()
                     ).then(async (json) => {
@@ -624,6 +628,7 @@ export const withdrawNft = async (
                         if (json.status === "Fail") {
                             clearTimeout(timeout);
                             clearInterval(timeInterval);
+                            closeLoading();
                             errorAlert("Transaction is failed..");
                         }
                     })

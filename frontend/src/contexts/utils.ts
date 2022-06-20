@@ -1,9 +1,9 @@
 import { web3 } from '@project-serum/anchor';
 import { programs } from "@metaplex/js";
-import { NETWORK } from "../config";
+import { NETWORK, RPC_URL } from "../config";
 import { PublicKey } from '@solana/web3.js';
 
-export const solConnection = new web3.Connection("https://a2-mind-prd-api.azurewebsites.net/rpc",
+export const solConnection = new web3.Connection(RPC_URL,
     { confirmTransactionInitialTimeout: 60000 });
 
 export const getNftMetaData = async (nftMintPk: PublicKey) => {

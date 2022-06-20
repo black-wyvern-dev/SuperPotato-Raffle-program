@@ -298,8 +298,26 @@ export default function RaffleDetail(props: {
                                             <p>{solPrice} <SolanaIcon /></p>
                                         </div>
                                         <div className="detail-row">
-                                            <label>Entries Left</label>
-                                            <p>{count} / {raffleDetail.maxEntrants}</p>
+                                            {count === raffleDetail.maxEntrants ?
+                                                <>
+                                                    <label>Tickets Sold</label>
+                                                    <p>{count} / {raffleDetail.maxEntrants}</p>
+                                                </>
+                                                :
+                                                <>
+                                                    {new Date() > new Date(endTimeStamp) ?
+                                                        <>
+                                                            <label>Tickts Sold</label>
+                                                            <p>{count} / {raffleDetail.maxEntrants}</p>
+                                                        </>
+                                                        :
+                                                        <>
+                                                            <label>Entries Left</label>
+                                                            <p>{raffleDetail.maxEntrants - count} / {raffleDetail.maxEntrants}</p>
+                                                        </>
+                                                    }
+                                                </>
+                                            }
                                         </div>
                                         <div className="detail-row">
                                             <label>

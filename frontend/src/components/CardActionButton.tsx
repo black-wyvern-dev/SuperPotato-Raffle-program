@@ -5,7 +5,9 @@ export default function CardActionButton(props: {
     claimed: number,
     onCallback: Function,
     winner: string,
-    endTime: number
+    endTime: number,
+    count: number,
+    maxEntrants: number
 }) {
     const [status, setStatus] = useState(0);
     // 0 : view detail
@@ -22,6 +24,9 @@ export default function CardActionButton(props: {
                     setStatus(1);
                 }
             }
+        }
+        if (props.count === props.maxEntrants) {
+            setStatus(3)
         }
     }, [props.claimed, props.winner, props.endTime]);
 
@@ -43,6 +48,11 @@ export default function CardActionButton(props: {
                     <label>Winner</label>
                     <div className="">{props.winner.slice(0, 3)}..{props.winner.slice(-3)}</div>
                 </div>
+            }
+            {status === 3 &&
+                <button className="btn-round btn-dark" onClick={() => props.onCallback()}>
+                    More Details
+                </button>
             }
         </>
     )

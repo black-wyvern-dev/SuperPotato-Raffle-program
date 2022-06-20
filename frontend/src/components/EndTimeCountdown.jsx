@@ -9,7 +9,7 @@ export default function EndTimeCountdown({ endTime, endAction, ...props }) {
             // Render a countdown
             return (
                 <span>
-                    {days !== 0 ? `${days}d` : ""} {hours}h {minutes}min {seconds}s
+                    {days !== 0 ? `${days}d` : ""} {hours}h {minutes}m {seconds}s
                 </span>
             );
         }

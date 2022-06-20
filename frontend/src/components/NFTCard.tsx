@@ -124,6 +124,8 @@ export default function NFTCard(props: {
                                 onCallback={() => enterDetail()}
                                 winner={winner}
                                 endTime={endTimestamp}
+                                count={count}
+                                maxEntrants={maxEntrants}
                             />
                         </div>
                         <div className="card-content">
@@ -149,8 +151,17 @@ export default function NFTCard(props: {
                                     )
                                     :
                                     <div className="entries">
-                                        <label>Entries Left</label>
-                                        <p>{count} / {maxEntrants}</p>
+                                        {count !== maxEntrants ?
+                                            <>
+                                                <label>Entries Left</label>
+                                                <p>{maxEntrants - count} / {maxEntrants}</p>
+                                            </>
+                                            :
+                                            <>
+                                                <label>Tickets Sold</label>
+                                                <p>{count} / {maxEntrants}</p>
+                                            </>
+                                        }
                                     </div>
                                 }
                                 <div className="price">
@@ -164,6 +175,8 @@ export default function NFTCard(props: {
                                     onCallback={() => enterDetail()}
                                     winner={winner}
                                     endTime={endTimestamp}
+                                    count={count}
+                                    maxEntrants={maxEntrants}
                                 />
                                 <div className="end-time">
                                     <label>

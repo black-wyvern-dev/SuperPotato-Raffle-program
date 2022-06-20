@@ -149,3 +149,9 @@
     align-items: center;
     justify-content: center;
 }
+.DatePicker__calendarContainer {
+    z-index: 2000 !important;
+}
+.Calendar {
+    z-index: 120 !important;
+}

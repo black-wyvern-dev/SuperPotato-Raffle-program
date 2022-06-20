@@ -13,6 +13,8 @@ import CreateCardSkeleton from "./CreateCardSkeleton";
 import CustomDatePicker from "./CustomDatePicker";
 import CustomTimePicker from "./CustomTimePicker";
 import { CalandarIcon, CloseIcon, SolanaIcon, TicketIcon, TimeIcon, TwitterIcon, VerifiedIcon } from "./svgIcons";
+import moment from "moment";
+import { errorAlert } from "./toastGroup";
 
 export default function CreateRaffle(props: {
     showCreated: boolean,
@@ -154,6 +156,10 @@ export default function CreateRaffle(props: {
 
     const handleCreate = async () => {
         if (!(ticketPrice && ticketSupply)) return;
+        if (moment(`${date}  ${time}`) < moment().add(1, 'days')) {
+            errorAlert("The raffle should run for a minimum of 24 hours. Please select the date and time again.");
+            return;
+        }
         try {
             await createRaffle(
                 wallet,
@@ -277,9 +283,9 @@ export default function CreateRaffle(props: {
                                 <p>An up-front rent fee, charged in SOL will be taken in proportion to number of tickets. This will be auto refunded after the raffle concludes.</p>
                                 <p>Raffles will proceed regardless if all tickets are sold or not. The creator can end the raffle after the specified date and time.</p>
                                 <p>The raffle should run for a minimum of 24 hours.</p>
-                                <p>NAME HERE will take a 5% commission fee from the ticket sales.</p>
+                                <p>Super Potato will take a 5% commission fee from the ticket sales.</p>
                                 <p>Your NFT will be returned if there&#38;s no ticket sales.</p>
-                                <p>Raffles CANNOT be edited or cancelled once a ticket is sold. NAME HERE does not take responsibility for promoting or marketing the raffles.</p>
+                                <p>Raffles CANNOT be edited or cancelled once a ticket is sold. Super Potato does not take responsibility for promoting or marketing the raffles.</p>
                             </div>
                         </div>
                         <div className="nft-mini-box">
@@ -331,9 +337,9 @@ export default function CreateRaffle(props: {
                                 <p>An up-front rent fee, charged in SOL will be taken in proportion to number of tickets. This will be auto refunded after the raffle concludes.</p>
                                 <p>Raffles will proceed regardless if all tickets are sold or not. The creator can end the raffle after the specified date and time.</p>
                                 <p>The raffle should run for a minimum of 24 hours.</p>
-                                <p>NAME HERE will take a 5% commission fee from the ticket sales.</p>
+                                <p>Super Potato will take a 5% commission fee from the ticket sales.</p>
                                 <p>Your NFT will be returned if there&#38;s no ticket sales.</p>
-                                <p>Raffles CANNOT be edited or cancelled once a ticket is sold. NAME HERE does not take responsibility for promoting or marketing the raffles.</p>
+                                <p>Raffles CANNOT be edited or cancelled once a ticket is sold. Super Potato does not take responsibility for promoting or marketing the raffles.</p>
                             </div>
                         </div>
                     </div>
