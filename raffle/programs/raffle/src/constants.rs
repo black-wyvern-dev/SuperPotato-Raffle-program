@@ -1,6 +1,6 @@
 pub const GLOBAL_AUTHORITY_SEED: &str = "global-authority";
 pub const RANDOM_SEED: &str = "random-seed";
-pub const TREASURY_WALLET: &str = "Am9xhPPVCfDZFDabcGgmQ8GTMdsbqEt1qVXbyhTxybAp";
+pub const TREASURY_WALLET: &str = "BEQZXkjg1BzY5349FXGPgvsbySWw5R7zjEC4xQhzmQR5";
 pub const MAX_ENTRANTS: usize = 2000;
 pub const MAX_COLLECTION: usize = 400;
 

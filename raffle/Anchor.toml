@@ -1,13 +1,13 @@
 [features]
 seeds = false
-[programs.devnet]
-raffle = "3qJm618bPvosqjFZqMjrUYgVXNKGDPBmTVRMqHar92DK"
+[programs.mainnet]
+raffle = "Geb2fkVJMgNbjPwMkcjfR3n4AiN7DKqKwctFwfErkbn7"
 
 [registry]
 url = "https://anchor.projectserum.com"
 
 [provider]
-cluster = "devnet"
+cluster = "mainnet"
 wallet = "/home/ubuntu/.config/solana/id.json"
 
 [scripts]

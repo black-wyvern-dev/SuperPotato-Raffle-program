@@ -18,7 +18,7 @@ import { Raffle } from '../target/types/raffle';
 
 const GLOBAL_AUTHORITY_SEED = "global-authority";
 const TREASURY_WALLET = new PublicKey('Am9xhPPVCfDZFDabcGgmQ8GTMdsbqEt1qVXbyhTxybAp');
-const PROGRAM_ID = "3qJm618bPvosqjFZqMjrUYgVXNKGDPBmTVRMqHar92DK";
+const PROGRAM_ID = "Geb2fkVJMgNbjPwMkcjfR3n4AiN7DKqKwctFwfErkbn7";
 
 const METAPLEX = new PublicKey('metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s');
 
@@ -26,7 +26,7 @@ const RAFFLE_SIZE = 64168;
 const COLLECTION_SIZE = 12816;
 const DECIMALS = 1000000000;
 
-anchor.setProvider(anchor.AnchorProvider.local(web3.clusterApiUrl('devnet')));
+anchor.setProvider(anchor.AnchorProvider.local(web3.clusterApiUrl('mainnet-beta')));
 const solConnection = anchor.getProvider().connection;
 const payer = anchor.AnchorProvider.local().wallet;
 console.log(payer.publicKey.toBase58());
@@ -52,8 +52,8 @@ const main = async () => {
     console.log('GlobalAuthority: ', globalAuthority.toBase58());
     // console.log(await getCollectionState());
 
-    await initProject();
-    // await addCollection(payer.publicKey, new PublicKey('GYq1mi8dh18nRAHbtdDuWiVRu4oAuSNzxoy3qStqX4RA'));
+    // await initProject();
+    await addCollection(payer.publicKey, new PublicKey('3TTf9nb7cU7tGivBkbXoAuuzDBsS4XH7LpxbppW21JUD'));
     // await createRaffle(payer.publicKey, new PublicKey("FLuGogNV1UPns65SCz8ZLBnPx1P9EtcjVphvbyg2t6ix"), 1, 1654249100, 100);
     // await buyTicket(payer.publicKey, new PublicKey("FLuGogNV1UPns65SCz8ZLBnPx1P9EtcjVphvbyg2t6ix"), 5);
     // await revealWinner(payer.publicKey, new PublicKey("FLuGogNV1UPns65SCz8ZLBnPx1P9EtcjVphvbyg2t6ix"));
